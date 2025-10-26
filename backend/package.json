@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "setup-db": "ts-node scripts/setupDatabase.ts",
+    "setup-production": "node setup-production.js",
     "create-admin": "ts-node scripts/createSuperAdmin.ts",
     "import-csv": "node scripts/importFromCSV.js",
     "reset-passwords": "node scripts/resetAllPasswords.js",

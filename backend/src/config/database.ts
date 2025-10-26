@@ -24,12 +24,12 @@ if (databaseUrl) {
     connectionString: databaseUrl,
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: isNeon ? 20000 : 10000, // Neon needs more time for cold start
     // Neon requires SSL, Railway internal doesn't
     ssl: isNeon ? { rejectUnauthorized: false } : false
   };
   
-  console.log(`🔗 Connected to database via DATABASE_URL${isNeon ? ' (Neon.tech)' : ''}`);
+  console.log(`🔗 Database pool configured${isNeon ? ' (Neon.tech)' : ''}`);
 } else {
   poolConfig = {
     host: process.env.DB_HOST || 'localhost',
@@ -45,21 +45,25 @@ if (databaseUrl) {
 
 const pool = new Pool(poolConfig);
 
-// Test connection on startup (non-blocking for production)
+// Test connection on startup (async, non-blocking)
+const testConnection = async () => {
+  try {
+    const client = await pool.connect();
+    console.log('✅ Database connection successful');
+    client.release();
+  } catch (err: any) {
+    if (!isProduction) {
+      console.error('❌ Database connection failed:', err.message);
+      console.error('⚠️  Server will continue, but database operations may fail');
+      console.error('💡 Tip: Neon database may be sleeping. First request will wake it up.');
+    }
+  }
+};
+
+// Run test connection but don't block server startup
 if (!isProduction) {
-  pool.connect((err, client, release) => {
-    if (err) {
-      console.error('❌ Không thể kết nối database:', err.message);
-      console.error('Kiểm tra lại thông tin trong file .env');
-      process.exit(1);
-    }
-    if (client) {
-      console.log('✅ Kết nối database thành công');
-      release();
-    }
-  });
+  testConnection();
 } else {
-  // Production: skip initial connection test, connect on first request
   console.log('📦 Database pool initialized. Will connect on first request.');
 }
 

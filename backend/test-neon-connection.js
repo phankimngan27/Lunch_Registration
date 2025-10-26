@@ -1,5 +1,6 @@
 // Test Neon database connection
 const { Client } = require('pg');
+require('dotenv').config();
 
 const databaseUrl = process.env.DATABASE_URL || process.argv[2];
 

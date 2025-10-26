@@ -2,6 +2,7 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 // Lấy DATABASE_URL từ environment hoặc argument
 const databaseUrl = process.env.DATABASE_URL || process.argv[2];

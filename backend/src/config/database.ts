@@ -8,30 +8,24 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 let poolConfig: any;
 
-// Always prefer DATABASE_PUBLIC_URL for Railway
-const databaseUrl = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
 
 // Log để debug
-if (isProduction) {
-  const urlToShow = databaseUrl?.replace(/:[^:@]+@/, ':****@') || 'none';
+if (isProduction && databaseUrl) {
+  const urlToShow = databaseUrl.replace(/:[^:@]+@/, ':****@');
   console.log(`🔗 Using database: ${urlToShow}`);
 }
 
 if (databaseUrl) {
-  // Force use internal URL only
-  const useInternalUrl = process.env.DATABASE_URL;
-  const finalUrl = useInternalUrl || databaseUrl;
-  
   poolConfig = {
-    connectionString: finalUrl,
+    connectionString: databaseUrl,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
-    // Railway internal network không cần SSL
     ssl: false
   };
   
-  console.log(`🔗 Using ${finalUrl.includes('railway.internal') ? 'internal' : 'public'} database connection`);
+  console.log(`🔗 Connected to database via DATABASE_URL`);
 } else {
   poolConfig = {
     host: process.env.DB_HOST || 'localhost',

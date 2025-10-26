@@ -17,15 +17,19 @@ if (isProduction && databaseUrl) {
 }
 
 if (databaseUrl) {
+  // Detect if using Neon.tech (contains neon.tech in URL)
+  const isNeon = databaseUrl.includes('neon.tech');
+  
   poolConfig = {
     connectionString: databaseUrl,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
-    ssl: false
+    // Neon requires SSL, Railway internal doesn't
+    ssl: isNeon ? { rejectUnauthorized: false } : false
   };
   
-  console.log(`🔗 Connected to database via DATABASE_URL`);
+  console.log(`🔗 Connected to database via DATABASE_URL${isNeon ? ' (Neon.tech)' : ''}`);
 } else {
   poolConfig = {
     host: process.env.DB_HOST || 'localhost',

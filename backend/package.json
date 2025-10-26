@@ -8,6 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "setup-db": "ts-node scripts/setupDatabase.ts",
+    "setup-neon": "node setup-neon.js",
+    "test-neon": "node test-neon-connection.js",
     "setup-production": "node setup-production.js",
     "create-admin": "ts-node scripts/createSuperAdmin.ts",
     "import-csv": "node scripts/importFromCSV.js",

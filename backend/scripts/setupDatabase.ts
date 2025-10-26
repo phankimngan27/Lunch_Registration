@@ -79,7 +79,7 @@ ON CONFLICT (email) DO NOTHING;
 async function setupDatabase() {
   // Use internal URL when running via Railway CLI
   const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
-  
+
   if (!databaseUrl) {
     console.error('❌ DATABASE_URL không tồn tại');
     process.exit(1);

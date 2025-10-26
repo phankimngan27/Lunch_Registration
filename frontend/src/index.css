@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
+
+/* Responsive table wrapper */
+@layer components {
+  .table-responsive {
+    @apply overflow-x-auto scrollbar-thin;
+  }
+  
+  .table-responsive table {
+    @apply min-w-full;
+  }
+  
+  /* Mobile card view for tables */
+  @media (max-width: 640px) {
+    .mobile-card-table thead {
+      @apply hidden;
+    }
+    
+    .mobile-card-table tbody tr {
+      @apply block mb-4 bg-white rounded-lg shadow p-4;
+    }
+    
+    .mobile-card-table tbody td {
+      @apply block text-right border-b border-gray-100 py-2;
+    }
+    
+    .mobile-card-table tbody td:last-child {
+      @apply border-b-0;
+    }
+    
+    .mobile-card-table tbody td::before {
+      content: attr(data-label);
+      @apply float-left font-semibold text-gray-700;
+    }
+  }
+}
+
+/* Toast customization for mobile */
+@media (max-width: 640px) {
+  .Toastify__toast-container {
+    width: 90vw !important;
+    left: 5vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .Toastify__toast {
+    margin-bottom: 0.5rem !important;
+    border-radius: 0.5rem !important;
+  }
+}

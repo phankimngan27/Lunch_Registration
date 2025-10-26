@@ -10,21 +10,13 @@ services:
     plan: free
     buildCommand: cd backend && npm install && npm run build
     startCommand: cd backend && npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 5000
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
+      - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
         generateValue: true
@@ -34,11 +26,5 @@ services:
         value: 25000
       - key: DEFAULT_PASSWORD
         value: 1234
-
-# Database
-databases:
-  - name: madison-lunch-db
-    databaseName: lunch_registration
-    user: madison
-    plan: free
-    region: singapore
+      - key: CORS_ORIGIN
+        sync: false

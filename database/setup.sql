@@ -76,7 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_users_project ON users(project);
 -- =====================================================
 
 INSERT INTO settings (key, value, description) VALUES 
-('lunch_price', '25000', 'Giá một suất cơm (VNĐ)')
+('lunch_price', '20000', 'Giá một suất cơm (VNĐ)')
 ON CONFLICT (key) DO NOTHING;
 
 -- Thêm cấu hình mặc định cho thời gian đăng ký

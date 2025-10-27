@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { login, getProfile } from '../controllers/authController';
-import { getAllUsers, createUser, updateUser, deleteUser } from '../controllers/userController';
+import { getAllUsers, createUser, updateUser, toggleUserStatus } from '../controllers/userController';
 import { createRegistration, getMyRegistrations, cancelRegistration } from '../controllers/registrationController';
 import { getStatistics, exportExcel } from '../controllers/statisticsController';
 import { getDailyRegistrations, exportDailyExcel } from '../controllers/dailyRegistrationController';
@@ -30,7 +30,7 @@ router.post('/auth/change-password', authenticate, changePassword);
 router.get('/users', authenticate, isAdmin, getAllUsers);
 router.post('/users', authenticate, isAdmin, createUser);
 router.put('/users/:id', authenticate, isAdmin, updateUser);
-router.delete('/users/:id', authenticate, isAdmin, deleteUser);
+router.patch('/users/:id/toggle-status', authenticate, isAdmin, toggleUserStatus);
 
 // Registration routes
 router.post('/registrations', authenticate, createRegistration);

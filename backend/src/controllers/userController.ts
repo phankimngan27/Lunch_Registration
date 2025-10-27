@@ -1,6 +1,21 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import pool from '../config/database';
+import { logger } from '../utils/logger';
+
+// Helper function to check if user is super admin
+const isSuperAdmin = (employee_code: string, email: string): boolean => {
+  return employee_code === 'admin' || email === 'admin@madison.dev';
+};
+
+// Helper function to get current user info
+const getCurrentUserInfo = async (userId: number) => {
+  const result = await pool.query(
+    'SELECT employee_code, email FROM users WHERE id = $1',
+    [userId]
+  );
+  return result.rows[0];
+};
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -32,7 +47,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Lỗi lấy danh sách nhân viên:', error);
+    logger.error('Failed to get users', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -47,15 +62,11 @@ export const createUser = async (req: Request, res: Response) => {
     }
 
     // Check if current user is super admin
-    const currentUserResult = await pool.query(
-      'SELECT employee_code, email FROM users WHERE id = $1',
-      [currentUser.id]
-    );
-    const isSuperAdmin = currentUserResult.rows[0]?.employee_code === 'admin' || 
-                         currentUserResult.rows[0]?.email === 'admin@madison.dev';
+    const currentUserInfo = await getCurrentUserInfo(currentUser.id);
+    const isCurrentUserSuperAdmin = isSuperAdmin(currentUserInfo.employee_code, currentUserInfo.email);
 
     // Nếu không phải super admin, không được tạo user với role admin
-    if (!isSuperAdmin && role === 'admin') {
+    if (!isCurrentUserSuperAdmin && role === 'admin') {
       return res.status(403).json({ message: 'Bạn không có quyền tạo tài khoản admin' });
     }
 
@@ -67,12 +78,13 @@ export const createUser = async (req: Request, res: Response) => {
       [employee_code, full_name, email, hashedPassword, department, project, role || 'user']
     );
 
+    logger.info('User created', { employee_code, email, role });
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     if (error.code === '23505') {
       return res.status(400).json({ message: 'Mã nhân viên hoặc email đã tồn tại' });
     }
-    console.error('Lỗi tạo nhân viên:', error);
+    logger.error('Failed to create user', error, { employee_code: req.body.employee_code });
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -88,12 +100,8 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 
     // Check if current user is super admin
-    const currentUserResult = await pool.query(
-      'SELECT employee_code, email FROM users WHERE id = $1',
-      [currentUser.id]
-    );
-    const isSuperAdmin = currentUserResult.rows[0]?.employee_code === 'admin' || 
-                         currentUserResult.rows[0]?.email === 'admin@madison.dev';
+    const currentUserInfo = await getCurrentUserInfo(currentUser.id);
+    const isCurrentUserSuperAdmin = isSuperAdmin(currentUserInfo.employee_code, currentUserInfo.email);
 
     // Check if this is the super admin account being edited
     const userCheck = await pool.query(
@@ -101,34 +109,34 @@ export const updateUser = async (req: Request, res: Response) => {
       [id]
     );
 
-    if (userCheck.rows.length > 0) {
-      const user = userCheck.rows[0];
-      
-      // Protect super admin account
-      if (user.employee_code === 'admin' || user.email === 'admin@madison.dev') {
-        // Prevent changing employee_code or email of super admin
-        if (employee_code !== 'admin' || email !== 'admin@madison.dev') {
-          return res.status(403).json({ message: 'Không thể thay đổi mã nhân viên hoặc email của tài khoản Super Admin' });
-        }
-        // Prevent deactivating super admin
-        if (is_active === false) {
-          return res.status(403).json({ message: 'Không thể vô hiệu hóa tài khoản Super Admin' });
-        }
-        // Prevent changing role of super admin
-        if (role !== 'admin') {
-          return res.status(403).json({ message: 'Không thể thay đổi quyền của tài khoản Super Admin' });
-        }
-      }
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
+    }
 
-      // Nếu không phải super admin, không được sửa user có role admin
-      if (!isSuperAdmin && user.role === 'admin') {
-        return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa tài khoản admin' });
+    const user = userCheck.rows[0];
+    const isTargetUserSuperAdmin = isSuperAdmin(user.employee_code, user.email);
+    
+    // Protect super admin account
+    if (isTargetUserSuperAdmin) {
+      if (employee_code !== 'admin' || email !== 'admin@madison.dev') {
+        return res.status(403).json({ message: 'Không thể thay đổi mã nhân viên hoặc email của tài khoản Super Admin' });
       }
+      if (is_active === false) {
+        return res.status(403).json({ message: 'Không thể vô hiệu hóa tài khoản Super Admin' });
+      }
+      if (role !== 'admin') {
+        return res.status(403).json({ message: 'Không thể thay đổi quyền của tài khoản Super Admin' });
+      }
+    }
 
-      // Nếu không phải super admin, không được thay đổi role thành admin
-      if (!isSuperAdmin && role === 'admin') {
-        return res.status(403).json({ message: 'Bạn không có quyền cấp quyền admin' });
-      }
+    // Nếu không phải super admin, không được sửa user có role admin
+    if (!isCurrentUserSuperAdmin && user.role === 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa tài khoản admin' });
+    }
+
+    // Nếu không phải super admin, không được thay đổi role thành admin
+    if (!isCurrentUserSuperAdmin && role === 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền cấp quyền admin' });
     }
 
     const result = await pool.query(
@@ -138,62 +146,66 @@ export const updateUser = async (req: Request, res: Response) => {
       [employee_code, full_name, email, department, project, role, is_active !== false, id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
-    }
-
+    logger.info('User updated', { id, employee_code, email });
     res.json(result.rows[0]);
   } catch (error: any) {
     if (error.code === '23505') {
       return res.status(400).json({ message: 'Mã nhân viên hoặc email đã tồn tại' });
     }
-    console.error('Lỗi cập nhật nhân viên:', error);
+    logger.error('Failed to update user', error, { id: req.params.id });
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const toggleUserStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const currentUser = (req as any).user;
 
     // Check if current user is super admin
-    const currentUserResult = await pool.query(
-      'SELECT employee_code, email FROM users WHERE id = $1',
-      [currentUser.id]
-    );
-    const isSuperAdmin = currentUserResult.rows[0]?.employee_code === 'admin' || 
-                         currentUserResult.rows[0]?.email === 'admin@madison.dev';
+    const currentUserInfo = await getCurrentUserInfo(currentUser.id);
+    const isCurrentUserSuperAdmin = isSuperAdmin(currentUserInfo.employee_code, currentUserInfo.email);
 
     // Check if this is the super admin account or an admin account
     const userCheck = await pool.query(
-      'SELECT employee_code, email, role FROM users WHERE id = $1',
+      'SELECT employee_code, email, role, is_active FROM users WHERE id = $1',
       [id]
     );
 
-    if (userCheck.rows.length > 0) {
-      const user = userCheck.rows[0];
-      
-      // Không ai được xóa super admin
-      if (user.employee_code === 'admin' || user.email === 'admin@madison.dev') {
-        return res.status(403).json({ message: 'Không thể xóa tài khoản Super Admin' });
-      }
-
-      // Nếu không phải super admin, không được xóa user có role admin
-      if (!isSuperAdmin && user.role === 'admin') {
-        return res.status(403).json({ message: 'Bạn không có quyền xóa tài khoản admin' });
-      }
-    }
-
-    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
-
-    if (result.rows.length === 0) {
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({ message: 'Không tìm thấy nhân viên' });
     }
 
-    res.json({ message: 'Xóa nhân viên thành công' });
+    const user = userCheck.rows[0];
+    const isTargetUserSuperAdmin = isSuperAdmin(user.employee_code, user.email);
+    
+    // Không ai được vô hiệu hóa super admin
+    if (isTargetUserSuperAdmin) {
+      return res.status(403).json({ message: 'Không thể vô hiệu hóa tài khoản Super Admin' });
+    }
+
+    // Nếu không phải super admin, không được thay đổi trạng thái user có role admin
+    if (!isCurrentUserSuperAdmin && user.role === 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền thay đổi trạng thái tài khoản admin' });
+    }
+
+    // Toggle is_active status
+    const newStatus = !user.is_active;
+    const result = await pool.query(
+      'UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, employee_code, full_name, is_active',
+      [newStatus, id]
+    );
+
+    logger.info('User status toggled', { id, employee_code: user.employee_code, newStatus });
+    res.json({ 
+      message: newStatus ? 'Kích hoạt tài khoản thành công' : 'Vô hiệu hóa tài khoản thành công',
+      user: result.rows[0]
+    });
   } catch (error) {
-    console.error('Lỗi xóa nhân viên:', error);
+    logger.error('Failed to toggle user status', error, { id: req.params.id });
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
+
+// Keep deleteUser for backward compatibility but mark as deprecated
+export const deleteUser = toggleUserStatus;

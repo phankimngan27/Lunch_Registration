@@ -1,52 +1,68 @@
 import { Request, Response } from 'express';
 import ExcelJS from 'exceljs';
 import pool from '../config/database';
+import { logger } from '../utils/logger';
+
+// Helper function to build query with filters
+const buildRegistrationQuery = (date: string, department?: string, meal_type?: string) => {
+  let query = `
+    SELECT 
+      u.id, u.employee_code, u.full_name, u.email, u.department, u.project,
+      r.is_vegetarian, r.registration_date
+    FROM registrations r
+    JOIN users u ON r.user_id = u.id
+    WHERE r.registration_date = $1 AND r.status = 'active'
+      AND u.employee_code != 'admin' 
+      AND u.email != 'admin@madison.dev'
+  `;
+
+  const params: any[] = [date];
+  let paramCount = 2;
+
+  if (department) {
+    query += ` AND u.department = $${paramCount}`;
+    params.push(department);
+    paramCount++;
+  }
+
+  if (meal_type === 'vegetarian') {
+    query += ` AND r.is_vegetarian = true`;
+  } else if (meal_type === 'normal') {
+    query += ` AND r.is_vegetarian = false`;
+  }
+
+  query += ' ORDER BY u.employee_code';
+
+  return { query, params };
+};
+
+// Helper function to get lunch price
+const getLunchPrice = async (): Promise<number> => {
+  const result = await pool.query(
+    `SELECT value FROM settings WHERE key = 'lunch_price'`
+  );
+  return result.rows[0]?.value || 20000;
+};
 
 export const getDailyRegistrations = async (req: Request, res: Response) => {
   try {
     const { date, department, meal_type } = req.query;
 
+    logger.debug('getDailyRegistrations', { date, department, meal_type });
+
     if (!date) {
       return res.status(400).json({ message: 'Vui lòng chọn ngày' });
     }
 
-    // Get lunch price
-    const priceResult = await pool.query(
-      `SELECT value FROM settings WHERE key = 'lunch_price'`
+    // Get lunch price and build query
+    const lunchPrice = await getLunchPrice();
+    const { query, params } = buildRegistrationQuery(
+      date as string, 
+      department as string, 
+      meal_type as string
     );
-    const lunchPrice = priceResult.rows[0]?.value || 20000;
 
-    // Build query
-    let query = `
-      SELECT 
-        u.id, u.employee_code, u.full_name, u.email, u.department, u.project,
-        r.is_vegetarian, r.registration_date
-      FROM registrations r
-      JOIN users u ON r.user_id = u.id
-      WHERE r.registration_date = $1 AND r.status = 'active'
-        AND u.employee_code != 'admin' 
-        AND u.email != 'admin@madison.dev'
-    `;
-
-    const params: any[] = [date];
-    let paramCount = 2;
-
-    if (department) {
-      query += ` AND u.department = $${paramCount}`;
-      params.push(department);
-      paramCount++;
-    }
-
-    if (meal_type) {
-      if (meal_type === 'vegetarian') {
-        query += ` AND r.is_vegetarian = true`;
-      } else if (meal_type === 'normal') {
-        query += ` AND r.is_vegetarian = false`;
-      }
-    }
-
-    query += ' ORDER BY u.employee_code';
-
+    logger.dbQuery(query, params);
     const result = await pool.query(query, params);
 
     // Calculate summary
@@ -54,6 +70,13 @@ export const getDailyRegistrations = async (req: Request, res: Response) => {
     const normalCount = result.rows.filter(r => !r.is_vegetarian).length;
     const vegetarianCount = result.rows.filter(r => r.is_vegetarian).length;
     const totalAmount = totalPeople * lunchPrice;
+
+    logger.info('Daily registrations retrieved', {
+      date,
+      totalPeople,
+      normalCount,
+      vegetarianCount
+    });
 
     res.json({
       summary: {
@@ -65,9 +88,16 @@ export const getDailyRegistrations = async (req: Request, res: Response) => {
       },
       registrations: result.rows
     });
-  } catch (error) {
-    console.error('Lỗi lấy danh sách đăng ký theo ngày:', error);
-    res.status(500).json({ message: 'Lỗi server' });
+  } catch (error: any) {
+    logger.error('Failed to get daily registrations', error, { 
+      date: req.query.date, 
+      department: req.query.department, 
+      meal_type: req.query.meal_type 
+    });
+    res.status(500).json({ 
+      message: 'Lỗi server',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -75,46 +105,19 @@ export const exportDailyExcel = async (req: Request, res: Response) => {
   try {
     const { date, department, meal_type } = req.query;
 
+    logger.debug('exportDailyExcel', { date, department, meal_type });
+
     if (!date) {
       return res.status(400).json({ message: 'Vui lòng chọn ngày' });
     }
 
-    // Get lunch price
-    const priceResult = await pool.query(
-      `SELECT value FROM settings WHERE key = 'lunch_price'`
+    // Get lunch price and registrations
+    const lunchPrice = await getLunchPrice();
+    const { query, params } = buildRegistrationQuery(
+      date as string, 
+      department as string, 
+      meal_type as string
     );
-    const lunchPrice = priceResult.rows[0]?.value || 20000;
-
-    // Build query
-    let query = `
-      SELECT 
-        u.employee_code, u.full_name, u.email, u.department, u.project,
-        r.is_vegetarian
-      FROM registrations r
-      JOIN users u ON r.user_id = u.id
-      WHERE r.registration_date = $1 AND r.status = 'active'
-        AND u.employee_code != 'admin' 
-        AND u.email != 'admin@madison.dev'
-    `;
-
-    const params: any[] = [date];
-    let paramCount = 2;
-
-    if (department) {
-      query += ` AND u.department = $${paramCount}`;
-      params.push(department);
-      paramCount++;
-    }
-
-    if (meal_type) {
-      if (meal_type === 'vegetarian') {
-        query += ` AND r.is_vegetarian = true`;
-      } else if (meal_type === 'normal') {
-        query += ` AND r.is_vegetarian = false`;
-      }
-    }
-
-    query += ' ORDER BY u.employee_code';
 
     const result = await pool.query(query, params);
 
@@ -127,7 +130,7 @@ export const exportDailyExcel = async (req: Request, res: Response) => {
     const formattedDate = dateObj.toLocaleDateString('vi-VN');
 
     // Title
-    worksheet.mergeCells('A1:G1');
+    worksheet.mergeCells('A1:H1');
     worksheet.getCell('A1').value = `DANH SÁCH ĐĂNG KÝ CƠM TRƯA NGÀY ${formattedDate}`;
     worksheet.getCell('A1').font = { bold: true, size: 14 };
     worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -214,10 +217,19 @@ export const exportDailyExcel = async (req: Request, res: Response) => {
 
     await workbook.xlsx.write(res);
     res.end();
-  } catch (error) {
-    console.error('Lỗi xuất Excel:', error);
+    
+    logger.info('Excel exported successfully', { date, rows: result.rows.length });
+  } catch (error: any) {
+    logger.error('Failed to export Excel', error, { 
+      date: req.query.date, 
+      department: req.query.department, 
+      meal_type: req.query.meal_type 
+    });
     if (!res.headersSent) {
-      res.status(500).json({ message: 'Lỗi server' });
+      res.status(500).json({ 
+        message: 'Lỗi server',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   }
 };

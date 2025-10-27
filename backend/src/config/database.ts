@@ -1,25 +1,18 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { logger } from '../utils/logger';
 
 dotenv.config();
 
-// Railway provides DATABASE_URL, local dev uses individual env vars
 const isProduction = process.env.NODE_ENV === 'production';
+const databaseUrl = process.env.DATABASE_URL;
 
 let poolConfig: any;
 
-const databaseUrl = process.env.DATABASE_URL;
-
-// Log để debug
-if (isProduction && databaseUrl) {
-  const urlToShow = databaseUrl.replace(/:[^:@]+@/, ':****@');
-  console.log(`🔗 Using database: ${urlToShow}`);
-}
-
 if (databaseUrl) {
-  // Detect if using Neon.tech (contains neon.tech in URL)
+  // Detect if using Neon.tech
   const isNeon = databaseUrl.includes('neon.tech');
-  
+
   poolConfig = {
     connectionString: databaseUrl,
     max: 20,
@@ -28,8 +21,11 @@ if (databaseUrl) {
     // Neon requires SSL, Railway internal doesn't
     ssl: isNeon ? { rejectUnauthorized: false } : false
   };
-  
-  console.log(`🔗 Database pool configured${isNeon ? ' (Neon.tech)' : ''}`);
+
+  logger.info('Database pool configured', {
+    provider: isNeon ? 'Neon.tech' : 'Railway',
+    ssl: isNeon
+  });
 } else {
   poolConfig = {
     host: process.env.DB_HOST || 'localhost',
@@ -49,13 +45,13 @@ const pool = new Pool(poolConfig);
 const testConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('✅ Database connection successful');
+    logger.info('Database connection successful');
     client.release();
   } catch (err: any) {
     if (!isProduction) {
-      console.error('❌ Database connection failed:', err.message);
-      console.error('⚠️  Server will continue, but database operations may fail');
-      console.error('💡 Tip: Neon database may be sleeping. First request will wake it up.');
+      logger.error('Database connection failed', err, {
+        tip: 'Neon database may be sleeping. First request will wake it up.'
+      });
     }
   }
 };
@@ -64,12 +60,12 @@ const testConnection = async () => {
 if (!isProduction) {
   testConnection();
 } else {
-  console.log('📦 Database pool initialized. Will connect on first request.');
+  logger.info('Database pool initialized. Will connect on first request.');
 }
 
 // Handle unexpected errors
 pool.on('error', (err: Error) => {
-  console.error('❌ Lỗi database không mong đợi:', err);
+  logger.error('Unexpected database error', err);
 });
 
 export default pool;

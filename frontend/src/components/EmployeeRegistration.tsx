@@ -31,8 +31,8 @@ export function EmployeeRegistration() {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   };
 
-  // Kiểm tra xem có thể đăng ký/chỉnh sửa không (dựa vào config)
-  const canRegister = () => {
+  // Kiểm tra daily cutoff (17:00) - áp dụng cho mọi ngày
+  const checkDailyCutoff = () => {
     const currentHour = today.getHours();
     return currentHour < config.daily_deadline_hour;
   };
@@ -42,15 +42,20 @@ export function EmployeeRegistration() {
     const monthValue = month.getMonth();
     const yearValue = month.getFullYear();
 
-    if (currentDay >= config.monthly_cutoff_day) {
-      // Từ ngày cutoff trở đi, chỉ có thể đăng ký cho tháng sau
-      const nextMonth = currentMonth + 1 > 11 ? 0 : currentMonth + 1;
-      const nextYear = currentMonth + 1 > 11 ? currentYear + 1 : currentYear;
-      return monthValue === nextMonth && yearValue === nextYear;
-    } else {
-      // Trước ngày cutoff, chỉ có thể đăng ký cho tháng hiện tại
-      return monthValue === currentMonth && yearValue === currentYear;
+    // Tháng hiện tại: luôn cho phép đăng ký (chỉ bị giới hạn bởi daily cutoff)
+    if (monthValue === currentMonth && yearValue === currentYear) {
+      return true;
     }
+
+    // Tháng kế tiếp: chỉ cho phép từ ngày cutoff (25) trở đi
+    const nextMonth = currentMonth + 1 > 11 ? 0 : currentMonth + 1;
+    const nextYear = currentMonth + 1 > 11 ? currentYear + 1 : currentYear;
+    if (monthValue === nextMonth && yearValue === nextYear) {
+      return currentDay >= config.monthly_cutoff_day;
+    }
+
+    // Các tháng khác: không cho phép
+    return false;
   };
 
   const [selectedMonth, setSelectedMonth] = useState<Date>(getInitialMonth());
@@ -60,7 +65,7 @@ export function EmployeeRegistration() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const isRegistrationOpen = canRegisterForMonth(selectedMonth) && canRegister();
+  const isRegistrationOpen = canRegisterForMonth(selectedMonth) && checkDailyCutoff();
 
   // Load tất cả registrations và check hasSubmitted cho tháng hiện tại
   const fetchRegistrations = async () => {
@@ -163,6 +168,13 @@ export function EmployeeRegistration() {
       return;
     }
 
+    // KHÔNG cho phép toggle ngày quá khứ
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (dateStart < todayStart) {
+      return; // Không cho phép chỉnh sửa ngày đã qua
+    }
+
     const dateString = date.toDateString();
     const isSelected = selectedDates.some((d) => d.toDateString() === dateString);
 
@@ -194,6 +206,13 @@ export function EmployeeRegistration() {
 
   const handleVegetarianToggle = (date: Date) => {
     if (!isEditing) return;
+    
+    // KHÔNG cho phép toggle ngày quá khứ
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (dateStart < todayStart) {
+      return; // Không cho phép chỉnh sửa ngày đã qua
+    }
     
     // Chỉ cho phép toggle vegetarian cho ngày rằm (1, 15, 30)
     if (!isVegetarianDay(date)) {
@@ -331,7 +350,7 @@ export function EmployeeRegistration() {
         <p className="text-sm sm:text-base text-gray-500">Đăng ký cơm trưa cho tháng {registrationMonthText}</p>
       </div>
 
-      {!canRegister() && canRegisterForMonth(selectedMonth) && (
+      {!checkDailyCutoff() && canRegisterForMonth(selectedMonth) && (
         <Alert className="bg-red-50 border-red-200">
           <AlertDescription className="flex items-start gap-2">
             <span>🕐</span>
@@ -387,8 +406,8 @@ export function EmployeeRegistration() {
         <Alert>
           <AlertDescription>
             ✅ Bạn đã đăng ký thành công cho tháng {registrationMonthText}.
-            {canRegisterForMonth(selectedMonth) && canRegister() && ' Nhấn "Chỉnh sửa đăng ký" để thay đổi.'}
-            {canRegisterForMonth(selectedMonth) && !canRegister() && ' (Đã hết thời gian chỉnh sửa cho ngày mai - sau 17:00)'}
+            {canRegisterForMonth(selectedMonth) && checkDailyCutoff() && ' Nhấn "Chỉnh sửa đăng ký" để thay đổi.'}
+            {canRegisterForMonth(selectedMonth) && !checkDailyCutoff() && ' (Đã hết thời gian chỉnh sửa cho ngày mai - sau 17:00)'}
           </AlertDescription>
         </Alert>
       )}

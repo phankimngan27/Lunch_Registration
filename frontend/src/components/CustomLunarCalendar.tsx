@@ -115,6 +115,13 @@ export function CustomLunarCalendar({
     onMonthChange(new Date(month.getFullYear(), month.getMonth() + 1, 1));
   };
 
+  const isPastDate = (dayInfo: { day: number; month: 'prev' | 'current' | 'next' }) => {
+    const date = getDateFromDayInfo(dayInfo);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const handleDayClick = (dayInfo: { day: number; month: 'prev' | 'current' | 'next' }) => {
     // Chỉ cho phép click vào ngày của tháng hiện tại và không phải cuối tuần
     if (disabled || dayInfo.month !== 'current') return;
@@ -127,12 +134,23 @@ export function CustomLunarCalendar({
       return;
     }
     
+    // KHÔNG cho phép chọn ngày quá khứ
+    if (isPastDate(dayInfo)) {
+      return;
+    }
+    
     onDateToggle(date);
   };
 
   const handleVegetarianClick = (dayInfo: { day: number; month: 'prev' | 'current' | 'next' }, e: React.MouseEvent) => {
     e.stopPropagation();
     if (disabled || dayInfo.month !== 'current' || !isSelected(dayInfo)) return;
+    
+    // KHÔNG cho phép toggle vegetarian cho ngày quá khứ
+    if (isPastDate(dayInfo)) {
+      return;
+    }
+    
     const date = getDateFromDayInfo(dayInfo);
     onVegetarianToggle(date);
   };
@@ -173,6 +191,7 @@ export function CustomLunarCalendar({
           const weekend = isWeekend(dayInfo);
           const selected = isSelected(dayInfo);
           const vegetarian = isVegetarian(dayInfo);
+          const pastDate = isPastDate(dayInfo);
 
           const lunar = getLunarDate(dayInfo);
           const isVegDay = isVegetarianDay(dayInfo);
@@ -184,10 +203,13 @@ export function CustomLunarCalendar({
               className={`
                 relative aspect-square p-1 rounded-lg border text-center
                 transition-all flex flex-col justify-between
-                ${!isCurrentMonth ? 'text-gray-300 bg-gray-50 cursor-default' : 'cursor-pointer'}
+                ${!isCurrentMonth ? 'text-gray-300 bg-gray-50 cursor-default' : ''}
                 ${isCurrentMonth && weekend ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''}
+                ${isCurrentMonth && pastDate && !weekend && !selected ? 'bg-gray-50 opacity-60' : ''}
+                ${isCurrentMonth && pastDate && !weekend ? 'cursor-not-allowed' : 'cursor-pointer'}
                 ${isCurrentMonth && selected && !weekend ? 'bg-orange-100 border-orange-500' : 'border-gray-200'}
-                ${isCurrentMonth && !disabled && !weekend ? 'hover:border-orange-300' : ''}
+                ${isCurrentMonth && selected && pastDate && !weekend ? 'opacity-70' : ''}
+                ${isCurrentMonth && !disabled && !weekend && !pastDate ? 'hover:border-orange-300' : ''}
               `}
             >
               <div className="text-sm font-medium">{dayInfo.day}</div>

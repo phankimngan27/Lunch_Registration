@@ -45,8 +45,8 @@ router.get('/statistics/export', authenticate, isAdmin, exportExcel);
 router.get('/daily-registrations', authenticate, isAdmin, getDailyRegistrations);
 router.get('/daily-registrations/export', authenticate, isAdmin, exportDailyExcel);
 
-// Config routes (Admin only)
-router.get('/config', authenticate, isAdmin, getConfig);
-router.put('/config', authenticate, isAdmin, updateConfig);
+// Config routes
+router.get('/config', authenticate, getConfig); // User có thể đọc config
+router.put('/config', authenticate, isAdmin, updateConfig); // Chỉ admin mới update
 
 export default router;

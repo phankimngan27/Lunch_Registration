@@ -2,12 +2,29 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import ConfirmModal from '../components/ConfirmModal';
 
 const UserManagement = () => {
   const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    confirmColor: 'blue' | 'red' | 'green' | 'orange';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    confirmColor: 'blue',
+    onConfirm: () => {}
+  });
   const [formData, setFormData] = useState({
     employee_code: '',
     full_name: '',
@@ -79,16 +96,44 @@ const UserManagement = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
+  const closeConfirmModal = () => {
+    setConfirmModal({
+      isOpen: false,
+      title: '',
+      message: '',
+      confirmText: '',
+      confirmColor: 'blue',
+      onConfirm: () => {}
+    });
+  };
+
+  const handleToggleStatus = (user: any) => {
+    const action = user.is_active ? 'vô hiệu hóa' : 'kích hoạt';
+    const actionCapitalized = action.charAt(0).toUpperCase() + action.slice(1);
     
-    try {
-      await api.delete(`/users/${id}`);
-      toast.success('Xóa thành công!');
-      fetchUsers();
-    } catch (error) {
-      toast.error('Lỗi xóa nhân viên');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: `${actionCapitalized} tài khoản`,
+      message: `Bạn có chắc muốn ${action} tài khoản "${user.full_name}" (${user.employee_code})?`,
+      confirmText: actionCapitalized,
+      confirmColor: user.is_active ? 'orange' : 'green',
+      onConfirm: async () => {
+        if (isProcessing) return;
+        
+        setIsProcessing(true);
+        try {
+          await api.patch(`/users/${user.id}/toggle-status`);
+          closeConfirmModal();
+          await fetchUsers();
+          toast.success(`${actionCapitalized} tài khoản thành công!`);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || `Lỗi ${action} tài khoản`);
+          closeConfirmModal();
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    });
   };
 
   const resetForm = () => {
@@ -134,6 +179,7 @@ const UserManagement = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bộ phận</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dự án</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vai trò</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
             </tr>
           </thead>
@@ -150,6 +196,11 @@ const UserManagement = () => {
                     {user.role}
                   </span>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                   {/* Chỉ super admin hoặc user không phải admin mới được sửa */}
                   {(isSuperAdmin || user.role !== 'admin' || currentUser?.id === user.id) && (
@@ -159,9 +210,15 @@ const UserManagement = () => {
                   {!isSuperAdmin && user.role === 'admin' && currentUser?.id !== user.id && (
                     <span className="text-gray-400 text-xs">(Không có quyền)</span>
                   )}
-                  {/* Xóa: không được xóa super admin, admin thường không được xóa admin khác */}
+                  {/* Toggle Active/Inactive: không được thay đổi super admin, admin thường không được thay đổi admin khác */}
                   {user.employee_code !== 'admin' && user.email !== 'admin@madison.dev' && (isSuperAdmin || user.role !== 'admin') && (
-                    <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-800">Xóa</button>
+                    <button 
+                      onClick={() => handleToggleStatus(user)} 
+                      disabled={isProcessing}
+                      className={`${user.is_active ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {user.is_active ? 'Inactive' : 'Active'}
+                    </button>
                   )}
                   {(user.employee_code === 'admin' || user.email === 'admin@madison.dev') && (
                     <span className="text-gray-400 text-xs">(Super Admin)</span>
@@ -271,6 +328,17 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        confirmColor={confirmModal.confirmColor}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirmModal}
+      />
     </div>
   );
 };

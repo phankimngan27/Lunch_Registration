@@ -20,7 +20,7 @@ const getCurrentUserInfo = async (userId: number) => {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const { search, department, project } = req.query;
-    
+
     let query = 'SELECT id, employee_code, full_name, email, department, project, role, is_active FROM users WHERE 1=1';
     const params: any[] = [];
     let paramCount = 1;
@@ -115,7 +115,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const user = userCheck.rows[0];
     const isTargetUserSuperAdmin = isSuperAdmin(user.employee_code, user.email);
-    
+
     // Protect super admin account
     if (isTargetUserSuperAdmin) {
       if (employee_code !== 'admin' || email !== 'admin@madison.dev') {
@@ -178,7 +178,7 @@ export const toggleUserStatus = async (req: Request, res: Response) => {
 
     const user = userCheck.rows[0];
     const isTargetUserSuperAdmin = isSuperAdmin(user.employee_code, user.email);
-    
+
     // Không ai được vô hiệu hóa super admin
     if (isTargetUserSuperAdmin) {
       return res.status(403).json({ message: 'Không thể vô hiệu hóa tài khoản Super Admin' });
@@ -197,7 +197,7 @@ export const toggleUserStatus = async (req: Request, res: Response) => {
     );
 
     logger.info('User status toggled', { id, employee_code: user.employee_code, newStatus });
-    res.json({ 
+    res.json({
       message: newStatus ? 'Kích hoạt tài khoản thành công' : 'Vô hiệu hóa tài khoản thành công',
       user: result.rows[0]
     });

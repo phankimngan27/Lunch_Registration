@@ -211,7 +211,13 @@ export function EmployeeRegistration() {
         vegetarianInfo[dateStr] = vegetarianDates.has(dateStr);
       });
 
-      // Gửi thêm month, year và vegetarianDates để backend biết tháng nào cần xử lý
+      // Gọi API để lưu đăng ký
+      await api.post('/registrations', {
+        dates,
+        month,
+        year,
+        vegetarianDates: vegetarianInfo
+      });
 
       if (dates.length === 0) {
         setHasSubmitted(false);

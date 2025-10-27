@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { CustomLunarCalendar } from "./CustomLunarCalendar";
 import { useAuthStore } from "../store/authStore";
 import api from "../api/axios";
+import { convertSolar2Lunar } from "../utils/lunarCalendar";
 
 const PRICE_PER_DAY = 20000;
 
@@ -88,7 +89,11 @@ export function EmployeeRegistration() {
 
           // Lưu thông tin ăn chay
           if (r.is_vegetarian) {
-            vegDates.add(date.toISOString().split('T')[0]);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
+            vegDates.add(dateKey);
           }
         });
         setSelectedDates(allDates);
@@ -163,7 +168,10 @@ export function EmployeeRegistration() {
 
     if (isSelected) {
       setSelectedDates(selectedDates.filter((d) => d.toDateString() !== dateString));
-      const dateKey = date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
       if (vegetarianDates.has(dateKey)) {
         const newVegDates = new Set(vegetarianDates);
         newVegDates.delete(dateKey);
@@ -174,9 +182,28 @@ export function EmployeeRegistration() {
     }
   };
 
+  const isVegetarianDay = (date: Date) => {
+    try {
+      const lunar = convertSolar2Lunar(date.getDate(), date.getMonth() + 1, date.getFullYear(), 7);
+      const lunarDay = lunar[0];
+      return lunarDay === 1 || lunarDay === 15 || lunarDay === 30;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const handleVegetarianToggle = (date: Date) => {
     if (!isEditing) return;
-    const dateKey = date.toISOString().split('T')[0];
+    
+    // Chỉ cho phép toggle vegetarian cho ngày rằm (1, 15, 30)
+    if (!isVegetarianDay(date)) {
+      return;
+    }
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
     const newVegDates = new Set(vegetarianDates);
     if (newVegDates.has(dateKey)) {
       newVegDates.delete(dateKey);
@@ -462,7 +489,10 @@ export function EmployeeRegistration() {
                   datesInCurrentMonth
                     .sort((a, b) => a.getTime() - b.getTime())
                     .map((date) => {
-                      const dateKey = date.toISOString().split('T')[0];
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const dateKey = `${year}-${month}-${day}`;
                       const isVegetarian = vegetarianDates.has(dateKey);
                       return (
                         <div

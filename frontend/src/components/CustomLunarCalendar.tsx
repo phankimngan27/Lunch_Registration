@@ -80,7 +80,11 @@ export function CustomLunarCalendar({
 
   const isVegetarian = (dayInfo: { day: number; month: 'prev' | 'current' | 'next' }) => {
     const date = getDateFromDayInfo(dayInfo);
-    const dateKey = date.toISOString().split('T')[0];
+    // Dùng local date string thay vì ISO để tránh lệch timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
     return vegetarianDates.has(dateKey);
   };
 
@@ -190,7 +194,7 @@ export function CustomLunarCalendar({
               <div className={`text-[10px] ${isCurrentMonth && isVegDay ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
                 {lunar.day}/{lunar.month}
               </div>
-              {isCurrentMonth && selected && !weekend && (
+              {isCurrentMonth && selected && !weekend && isVegDay && (
                 <button
                   onClick={(e) => handleVegetarianClick(dayInfo, e)}
                   className={`

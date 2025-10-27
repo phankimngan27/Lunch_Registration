@@ -23,7 +23,7 @@ const UserManagement = () => {
     message: '',
     confirmText: '',
     confirmColor: 'blue',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
   const [formData, setFormData] = useState({
     employee_code: '',
@@ -58,7 +58,7 @@ const UserManagement = () => {
       if (editingUser) {
         // Cập nhật thông tin user
         await api.put(`/users/${editingUser.id}`, formData);
-        
+
         // Nếu có nhập mật khẩu mới, đổi mật khẩu
         if (formData.newPassword && formData.newPassword.trim() !== '') {
           await api.post('/auth/change-password', {
@@ -103,14 +103,14 @@ const UserManagement = () => {
       message: '',
       confirmText: '',
       confirmColor: 'blue',
-      onConfirm: () => {}
+      onConfirm: () => { }
     });
   };
 
   const handleToggleStatus = (user: any) => {
     const action = user.is_active ? 'vô hiệu hóa' : 'kích hoạt';
     const actionCapitalized = action.charAt(0).toUpperCase() + action.slice(1);
-    
+
     setConfirmModal({
       isOpen: true,
       title: `${actionCapitalized} tài khoản`,
@@ -119,7 +119,7 @@ const UserManagement = () => {
       confirmColor: user.is_active ? 'orange' : 'green',
       onConfirm: async () => {
         if (isProcessing) return;
-        
+
         setIsProcessing(true);
         try {
           await api.patch(`/users/${user.id}/toggle-status`);
@@ -212,8 +212,8 @@ const UserManagement = () => {
                   )}
                   {/* Toggle Active/Inactive: không được thay đổi super admin, admin thường không được thay đổi admin khác */}
                   {user.employee_code !== 'admin' && user.email !== 'admin@madison.dev' && (isSuperAdmin || user.role !== 'admin') && (
-                    <button 
-                      onClick={() => handleToggleStatus(user)} 
+                    <button
+                      onClick={() => handleToggleStatus(user)}
                       disabled={isProcessing}
                       className={`${user.is_active ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -244,7 +244,7 @@ const UserManagement = () => {
                 type="text"
                 placeholder="Mã nhân viên"
                 value={formData.employee_code}
-                onChange={(e) => setFormData({...formData, employee_code: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, employee_code: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
                 disabled={editingUser && (editingUser.employee_code === 'admin' || editingUser.email === 'admin@madison.dev')}
                 required
@@ -253,7 +253,7 @@ const UserManagement = () => {
                 type="text"
                 placeholder="Họ tên"
                 value={formData.full_name}
-                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
                 required
               />
@@ -261,7 +261,7 @@ const UserManagement = () => {
                 type="email"
                 placeholder="Email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
                 disabled={editingUser && (editingUser.employee_code === 'admin' || editingUser.email === 'admin@madison.dev')}
                 required
@@ -271,7 +271,7 @@ const UserManagement = () => {
                   type="password"
                   placeholder="Mật khẩu"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-3 py-2 border rounded"
                   required
                 />
@@ -282,7 +282,7 @@ const UserManagement = () => {
                     type="password"
                     placeholder="Mật khẩu mới (để trống nếu không đổi)"
                     value={formData.newPassword}
-                    onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-purple-500"
                     minLength={4}
                   />
@@ -293,19 +293,19 @@ const UserManagement = () => {
                 type="text"
                 placeholder="Bộ phận"
                 value={formData.department}
-                onChange={(e) => setFormData({...formData, department: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
               />
               <input
                 type="text"
                 placeholder="Dự án"
                 value={formData.project}
-                onChange={(e) => setFormData({...formData, project: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, project: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
               />
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full px-3 py-2 border rounded"
                 disabled={editingUser && (editingUser.employee_code === 'admin' || editingUser.email === 'admin@madison.dev')}
               >

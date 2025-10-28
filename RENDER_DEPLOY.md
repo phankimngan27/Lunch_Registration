@@ -154,15 +154,15 @@ File: `frontend/src/api/axios.ts`
 const API_URL = 'https://madison-lunch-backend.onrender.com/api';
 ```
 
-### 4.2. Deploy Frontend lên Vercel
-Xem hướng dẫn trong `VERCEL_DEPLOY.md`
+### 4.2. Deploy Frontend lên Render
+Xem phần **Bước 3** bên dưới
 
 ### 4.3. Cập nhật CORS_ORIGIN
 Sau khi có frontend URL, quay lại Render:
 1. Vào Web Service → **Environment**
 2. Update `CORS_ORIGIN`:
 ```
-CORS_ORIGIN=https://madison-lunch.vercel.app
+CORS_ORIGIN=https://madison-lunch-frontend.onrender.com
 ```
 3. Service sẽ tự động redeploy
 
@@ -318,7 +318,8 @@ Render sẽ tự động:
 
 ## 🚀 Next Steps
 
-- [ ] Deploy frontend lên Vercel
+- [x] Deploy backend lên Render
+- [x] Deploy frontend lên Render (static site)
 - [ ] Setup custom domain (optional)
 - [ ] Enable monitoring/alerts
 - [ ] Setup backup strategy

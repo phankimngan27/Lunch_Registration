@@ -81,7 +81,7 @@ git add .
 git commit -m "fix: optimize login performance (bcrypt 8 rounds + db pooling)"
 git push origin main
 
-# Deploy sẽ tự động trigger trên Railway/Vercel
+# Deploy sẽ tự động trigger trên Render
 ```
 
 ### Bước 3: Verify trên production

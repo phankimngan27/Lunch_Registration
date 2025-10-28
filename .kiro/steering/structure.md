@@ -134,9 +134,39 @@ frontend/
 - No console.logs in production code
 
 ## Important Rules
-1. **Always review code after changes** - Check for syntax errors, missing imports, type issues
-2. **Remove unnecessary files** - Don't leave unused code or files
-3. **Test before committing** - Run dev servers and verify functionality
-4. **Vietnamese language** - UI text and user-facing messages in Vietnamese
-5. **No direct database access in routes** - Use controllers
-6. **Validate all inputs** - Both client and server side
+
+### Code Quality & Review
+1. **ALWAYS review code after making changes**:
+   - Use `getDiagnostics` tool to check for syntax errors, type issues, and linting problems
+   - Verify all imports are correct and used
+   - Check for missing dependencies or unused variables
+   - Ensure proper error handling is in place
+   - Review the code matches the requirements
+
+2. **ALWAYS clean up temporary files**:
+   - Delete any temporary/utility scripts created for one-time tasks (e.g., data migration scripts, check scripts)
+   - Remove debug files, test data files, or experimental code
+   - Delete duplicate files or backup files
+   - Keep only production-ready code in the repository
+   - Examples of files to remove: `check-*.js`, `test-*.js`, `debug-*.js`, `temp-*.js`, backup files
+
+3. **Test before committing**:
+   - Run dev servers and verify functionality works as expected
+   - Test both happy path and error scenarios
+   - Verify UI displays correctly with Vietnamese text
+   - Check API responses and error messages
+
+### Development Standards
+4. **Vietnamese language** - All UI text and user-facing messages must be in Vietnamese
+
+5. **No direct database access in routes** - Always use controllers for database operations
+
+6. **Validate all inputs** - Implement validation on both client and server side
+
+7. **No console.logs in production code** - Remove all debug console statements before committing
+
+8. **Security first**:
+   - Always use parameterized queries (never string concatenation)
+   - Validate and sanitize all user inputs
+   - Handle sensitive data (passwords, tokens) securely
+   - Never commit credentials or secrets to repository

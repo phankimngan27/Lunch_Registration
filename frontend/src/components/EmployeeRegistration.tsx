@@ -184,10 +184,21 @@ export function EmployeeRegistration() {
   const totalAmount = totalDays * PRICE_PER_DAY;
 
   // Chỉ đếm vegetarian dates của tháng hiện tại
-  const vegetarianCount = Array.from(vegetarianDates).filter(dateKey => {
-    const date = new Date(dateKey);
-    return date.getMonth() === selectedMonth.getMonth() && date.getFullYear() === selectedMonth.getFullYear();
-  }).length;
+  const vegetarianDatesInMonth = Array.from(vegetarianDates).filter(dateKey => {
+    // Parse dateKey "YYYY-MM-DD" correctly without timezone issues
+    const [year, month] = dateKey.split('-').map(Number);
+    return month - 1 === selectedMonth.getMonth() && year === selectedMonth.getFullYear();
+  });
+  
+  // Debug: Log để kiểm tra
+  console.log('🔍 Debug vegetarian dates:', {
+    allVegetarianDates: Array.from(vegetarianDates),
+    vegetarianDatesInMonth,
+    selectedMonth: selectedMonth.getMonth() + 1,
+    selectedYear: selectedMonth.getFullYear()
+  });
+  
+  const vegetarianCount = vegetarianDatesInMonth.length;
 
   const handleDateToggle = (date: Date) => {
     if (!isEditing) return;

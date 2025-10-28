@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS registrations (
     registration_date DATE NOT NULL,
     month INTEGER NOT NULL,
     year INTEGER NOT NULL,
+    is_vegetarian BOOLEAN DEFAULT false,
     status VARCHAR(20) DEFAULT 'active', -- 'active', 'cancelled'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS registration_config (
 CREATE INDEX IF NOT EXISTS idx_registrations_user_id ON registrations(user_id);
 CREATE INDEX IF NOT EXISTS idx_registrations_date ON registrations(registration_date);
 CREATE INDEX IF NOT EXISTS idx_registrations_month_year ON registrations(month, year);
+CREATE INDEX IF NOT EXISTS idx_registrations_is_vegetarian ON registrations(is_vegetarian);
 CREATE INDEX IF NOT EXISTS idx_users_department ON users(department);
 CREATE INDEX IF NOT EXISTS idx_users_project ON users(project);
 

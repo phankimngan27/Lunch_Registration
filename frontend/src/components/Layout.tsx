@@ -25,11 +25,9 @@ const Layout = () => {
             {/* Madison Logo */}
             <Link to="/dashboard" className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5">
-                <svg viewBox="0 0 100 100" className="w-full h-full">
-                  <path d="M 15 85 L 15 25 L 30 40 L 50 15 L 70 40 L 85 25 L 85 85 L 70 85 L 70 50 L 50 70 L 30 50 L 30 85 Z" fill="#4BA3D1"/>
-                </svg>
+                <img src="/madison-logo.png" alt="Madison Logo" className="w-full h-full object-contain" />
               </div>
-              <span className="text-white font-bold text-lg">Madison</span>
+              <span className="text-white font-bold text-lg">Madison Technologies</span>
             </Link>
 
             {/* Desktop Navigation */}

@@ -22,8 +22,8 @@ export function EmployeeRegistration() {
 
   // State cho config
   const [config, setConfig] = useState({
-    monthly_cutoff_day: 23,
-    daily_deadline_hour: 17
+    monthly_cutoff_day: 25,
+    daily_deadline_hour: 20
   });
 
   const getInitialMonth = () => {
@@ -31,10 +31,47 @@ export function EmployeeRegistration() {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   };
 
-  // Kiểm tra daily cutoff (17:00) - áp dụng cho mọi ngày
-  const checkDailyCutoff = () => {
+  // Kiểm tra xem có thể chỉnh sửa một ngày cụ thể không
+  const canEditDate = (date: Date): boolean => {
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const currentHour = today.getHours();
-    return currentHour < config.daily_deadline_hour;
+
+    // Không cho phép sửa ngày quá khứ
+    if (dateStart < todayStart) {
+      return false;
+    }
+
+    // Tính ngày mai
+    const tomorrow = new Date(todayStart);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Nếu là ngày hôm nay: chỉ sửa được nếu trước deadline (20:00 hôm qua)
+    // Vì đã qua 20:00 hôm qua thì không được sửa ngày hôm nay nữa
+    if (dateStart.getTime() === todayStart.getTime()) {
+      // Ngày hôm nay không được phép edit vì deadline là 20:00 hôm qua
+      return false;
+    }
+
+    // Nếu là ngày mai: chỉ sửa được nếu trước 20:00 hôm nay
+    if (dateStart.getTime() === tomorrow.getTime()) {
+      return currentHour < config.daily_deadline_hour;
+    }
+
+    // Nếu là ngày trong tháng hiện tại (từ ngày kia trở đi): luôn cho phép sửa
+    if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+      return true;
+    }
+
+    // Nếu là ngày tháng kế tiếp: chỉ cho phép nếu đã qua ngày 25
+    const nextMonth = currentMonth + 1 > 11 ? 0 : currentMonth + 1;
+    const nextYear = currentMonth + 1 > 11 ? currentYear + 1 : currentYear;
+    if (date.getMonth() === nextMonth && date.getFullYear() === nextYear) {
+      return currentDay >= config.monthly_cutoff_day;
+    }
+
+    // Các tháng khác: không cho phép
+    return false;
   };
 
   // Kiểm tra xem tháng đang xem có phải là tháng có thể đăng ký không
@@ -42,7 +79,7 @@ export function EmployeeRegistration() {
     const monthValue = month.getMonth();
     const yearValue = month.getFullYear();
 
-    // Tháng hiện tại: luôn cho phép đăng ký (chỉ bị giới hạn bởi daily cutoff)
+    // Tháng hiện tại: luôn cho phép xem và đăng ký
     if (monthValue === currentMonth && yearValue === currentYear) {
       return true;
     }
@@ -65,7 +102,7 @@ export function EmployeeRegistration() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const isRegistrationOpen = canRegisterForMonth(selectedMonth) && checkDailyCutoff();
+  const isRegistrationOpen = canRegisterForMonth(selectedMonth);
 
   // Load tất cả registrations và check hasSubmitted cho tháng hiện tại
   const fetchRegistrations = async () => {
@@ -165,14 +202,23 @@ export function EmployeeRegistration() {
     // KHÔNG cho phép toggle ngày cuối tuần (Chủ nhật = 0, Thứ 7 = 6)
     const dayOfWeek = date.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
+      toast.warning('Không thể đăng ký cơm vào cuối tuần');
       return;
     }
 
-    // KHÔNG cho phép toggle ngày quá khứ
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    if (dateStart < todayStart) {
-      return; // Không cho phép chỉnh sửa ngày đã qua
+    // Kiểm tra xem có thể chỉnh sửa ngày này không (theo logic mới)
+    if (!canEditDate(date)) {
+      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      // Kiểm tra xem là ngày quá khứ hay ngày hôm nay
+      if (dateStart <= todayStart) {
+        toast.warning('⛔ Bạn không được chỉnh sửa ngày hiện tại và quá khứ');
+      } else {
+        // Ngày mai sau deadline
+        toast.warning(`🕐 Đã hết thời gian chỉnh sửa cho ngày ${date.toLocaleDateString("vi-VN")}`);
+      }
+      return;
     }
 
     const dateString = date.toDateString();
@@ -207,11 +253,9 @@ export function EmployeeRegistration() {
   const handleVegetarianToggle = (date: Date) => {
     if (!isEditing) return;
     
-    // KHÔNG cho phép toggle ngày quá khứ
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    if (dateStart < todayStart) {
-      return; // Không cho phép chỉnh sửa ngày đã qua
+    // Kiểm tra xem có thể chỉnh sửa ngày này không (theo logic mới)
+    if (!canEditDate(date)) {
+      return;
     }
     
     // Chỉ cho phép toggle vegetarian cho ngày rằm (1, 15, 30)
@@ -309,8 +353,8 @@ export function EmployeeRegistration() {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
       const dayOfWeek = date.getDay();
-      // Chỉ chọn các ngày không phải cuối tuần (0 = CN, 6 = T7)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      // Chỉ chọn các ngày không phải cuối tuần và có thể chỉnh sửa
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && canEditDate(date)) {
         allDates.push(date);
       }
     }
@@ -350,20 +394,53 @@ export function EmployeeRegistration() {
         <p className="text-sm sm:text-base text-gray-500">Đăng ký cơm trưa cho tháng {registrationMonthText}</p>
       </div>
 
-      {!checkDailyCutoff() && canRegisterForMonth(selectedMonth) && (
-        <Alert className="bg-red-50 border-red-200">
-          <AlertDescription className="flex items-start gap-2">
-            <span>🕐</span>
-            <div>
-              <p className="font-medium mb-1">Đã hết thời gian đăng ký cho ngày mai</p>
-              <p className="text-sm">
-                Thời gian đăng ký, chỉnh sửa cơm cho ngày mai chỉ được phép trước <strong>{config.daily_deadline_hour}:00 hôm nay</strong>.
-                Hiện tại đã quá giờ quy định.
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+      {(() => {
+        const currentHour = today.getHours();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const isTodayInSelectedMonth = today.getMonth() === selectedMonth.getMonth() && 
+                                       today.getFullYear() === selectedMonth.getFullYear();
+        const isTomorrowInSelectedMonth = tomorrow.getMonth() === selectedMonth.getMonth() && 
+                                          tomorrow.getFullYear() === selectedMonth.getFullYear();
+        const isAfterDeadline = currentHour >= config.daily_deadline_hour;
+        
+        // Alert cho ngày hôm nay - không được edit
+        if (isTodayInSelectedMonth && canRegisterForMonth(selectedMonth)) {
+          return (
+            <Alert className="bg-red-50 border-red-200">
+              <AlertDescription className="flex items-start gap-2">
+                <span>⛔</span>
+                <div>
+                  <p className="font-medium mb-1">Không thể chỉnh sửa cho ngày hôm nay</p>
+                  <p className="text-sm">
+                    Ngày <strong>{today.toLocaleDateString("vi-VN")}</strong> không thể chỉnh sửa vì đã qua thời gian deadline (trước <strong>{config.daily_deadline_hour}:00 hôm qua</strong>).
+                    Bạn có thể chỉnh sửa từ ngày <strong>{tomorrow.toLocaleDateString("vi-VN")}</strong> trở đi{isAfterDeadline ? ' (từ ngày kia)' : ''}.
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          );
+        }
+        
+        // Alert cho ngày mai - sau deadline
+        if (isAfterDeadline && isTomorrowInSelectedMonth && canRegisterForMonth(selectedMonth)) {
+          return (
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertDescription className="flex items-start gap-2">
+                <span>🕐</span>
+                <div>
+                  <p className="font-medium mb-1">Đã hết thời gian chỉnh sửa cho ngày mai</p>
+                  <p className="text-sm">
+                    Thời gian chỉnh sửa cơm cho ngày <strong>{tomorrow.toLocaleDateString("vi-VN")}</strong> chỉ được phép trước <strong>{config.daily_deadline_hour}:00 hôm nay</strong>.
+                    Bạn vẫn có thể chỉnh sửa các ngày khác trong tháng (từ ngày kia trở đi).
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          );
+        }
+        return null;
+      })()}
 
       {!canRegisterForMonth(selectedMonth) && (selectedMonth.getFullYear() > currentYear || (selectedMonth.getFullYear() === currentYear && selectedMonth.getMonth() > currentMonth)) && (
         <Alert className="bg-amber-50 border-amber-200">
@@ -406,8 +483,7 @@ export function EmployeeRegistration() {
         <Alert>
           <AlertDescription>
             ✅ Bạn đã đăng ký thành công cho tháng {registrationMonthText}.
-            {canRegisterForMonth(selectedMonth) && checkDailyCutoff() && ' Nhấn "Chỉnh sửa đăng ký" để thay đổi.'}
-            {canRegisterForMonth(selectedMonth) && !checkDailyCutoff() && ' (Đã hết thời gian chỉnh sửa cho ngày mai - sau 17:00)'}
+            {canRegisterForMonth(selectedMonth) && ' Nhấn "Chỉnh sửa đăng ký" để thay đổi.'}
           </AlertDescription>
         </Alert>
       )}

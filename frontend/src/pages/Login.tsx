@@ -42,14 +42,12 @@ const Login = () => {
             <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 items-center justify-center p-12">
                 <div className="max-w-md text-white">
                     <div className="mb-8">
-                        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-lg p-4">
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                                <path d="M 15 85 L 15 25 L 30 40 L 50 15 L 70 40 L 85 25 L 85 85 L 70 85 L 70 50 L 50 70 L 30 50 L 30 85 Z" fill="#4BA3D1" />
-                            </svg>
+                        <div className="w-32 h-32 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-lg p-4">
+                            <img src="/madison-logo.png" alt="Madison Logo" className="w-full h-full object-contain" />
                         </div>
-                        <h1 className="text-5xl font-bold mb-4">Đăng ký Cơm Trưa</h1>
+                        <h1 className="text-5xl font-bold mb-4">Madison Technologies</h1>
                         <p className="text-xl text-blue-100">
-                            Madison Technologies - Hệ thống quản lý suất ăn nội bộ
+                            Hệ thống đăng ký cơm trưa nội bộ
                         </p>
                     </div>
                     <div className="space-y-4 mt-12">
@@ -89,12 +87,11 @@ const Login = () => {
                 <div className="max-w-md w-full">
                     {/* Mobile Logo */}
                     <div className="lg:hidden text-center mb-8">
-                        <div className="inline-flex w-16 h-16 bg-white rounded-2xl items-center justify-center mb-4 shadow-lg p-3">
-                            <svg viewBox="0 0 100 100" className="w-full h-full">
-                                <path d="M 15 85 L 15 25 L 30 40 L 50 15 L 70 40 L 85 25 L 85 85 L 70 85 L 70 50 L 50 70 L 30 50 L 30 85 Z" fill="#4BA3D1" />
-                            </svg>
+                        <div className="inline-flex w-20 h-20 bg-white rounded-2xl items-center justify-center mb-4 shadow-lg p-3">
+                            <img src="/madison-logo.png" alt="Madison Logo" className="w-full h-full object-contain" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900">Madison - Đăng ký Cơm Trưa</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">Madison Technologies</h2>
+                        <p className="text-sm text-gray-600 mt-1">Hệ thống đăng ký cơm trưa</p>
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-10">

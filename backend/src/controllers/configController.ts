@@ -12,7 +12,7 @@ export const getConfig = async (req: Request, res: Response) => {
       // Nếu chưa có config, tạo mặc định
       const insertResult = await pool.query(
         'INSERT INTO registration_config (monthly_cutoff_day, daily_deadline_hour, updated_by) VALUES ($1, $2, $3) RETURNING monthly_cutoff_day, daily_deadline_hour, updated_at',
-        [23, 17, 'system']
+        [25, 20, 'system']
       );
       return res.json(insertResult.rows[0]);
     }

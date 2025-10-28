@@ -32,15 +32,11 @@ services:
   # Frontend
   - type: web
     name: madison-lunch-frontend
-    env: static
+    env: node
     region: singapore
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: npx serve -s frontend/dist -l 3000
     envVars:
       - key: VITE_API_URL
         sync: false

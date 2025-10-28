@@ -13,7 +13,7 @@ const pool = new Pool({
 async function resetAllPasswords() {
   try {
     const defaultPassword = process.env.DEFAULT_PASSWORD || '1234';
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, 8);
 
     console.log(`🔄 Đang reset tất cả password thành: ${defaultPassword}`);
 

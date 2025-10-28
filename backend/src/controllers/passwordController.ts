@@ -46,8 +46,8 @@ export const changePassword = async (req: Request, res: Response) => {
       }
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Hash new password (8 rounds for faster login)
+    const hashedPassword = await bcrypt.hash(newPassword, 8);
 
     // Update password
     await pool.query(

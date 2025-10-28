@@ -17,9 +17,12 @@ if (databaseUrl) {
     connectionString: databaseUrl,
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: isNeon ? 20000 : 10000, // Neon needs more time for cold start
+    connectionTimeoutMillis: isNeon ? 30000 : 10000, // Neon needs more time for cold start
     // Neon requires SSL, Railway internal doesn't
-    ssl: isNeon ? { rejectUnauthorized: false } : false
+    ssl: isNeon ? { rejectUnauthorized: false } : false,
+    // Keep connections alive to prevent cold starts
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000
   };
 
   logger.info('Database pool configured', {

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import pool from '../config/database';
 
 export const login = async (req: Request, res: Response) => {
+  const startTime = Date.now();
   try {
     const { email, password } = req.body;
 
@@ -80,6 +81,9 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
+    const loginTime = Date.now() - startTime;
+    console.log(`✅ Login successful for ${email} in ${loginTime}ms`);
+
     res.json({
       token,
       user: {
@@ -93,7 +97,8 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Lỗi đăng nhập:', error);
+    const loginTime = Date.now() - startTime;
+    console.error(`❌ Login failed after ${loginTime}ms:`, error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };

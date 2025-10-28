@@ -134,8 +134,8 @@ async function importData() {
     const employees = parseCSV(csvPath);
     console.log(`Tìm thấy ${employees.length} nhân viên`);
     
-    // Default password cho tất cả user
-    const defaultPassword = await bcrypt.hash('1234', 10);
+    // Default password cho tất cả user (8 rounds for faster login)
+    const defaultPassword = await bcrypt.hash('1234', 8);
     
     let userCount = 0;
     let registrationCount = 0;

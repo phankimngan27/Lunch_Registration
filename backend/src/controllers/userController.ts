@@ -70,7 +70,7 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Bạn không có quyền tạo tài khoản admin' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 8);
 
     const result = await pool.query(
       `INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) 

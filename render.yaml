@@ -32,19 +32,11 @@ services:
   # Frontend
   - type: web
     name: madison-lunch-frontend
-    env: static
+    env: node
     region: singapore
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: cd frontend && npm start
     envVars:
       - key: VITE_API_URL
         sync: false

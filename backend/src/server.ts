@@ -38,13 +38,23 @@ app.use(express.urlencoded({ extended: true }));
 // Request logging
 app.use(requestLogger);
 
+// Root endpoint for health checks
+app.get('/', (_req, res) => {
+  res.json({ 
+    status: 'OK',
+    service: 'Madison Lunch Registration API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.use('/api', routes);
 app.use('/api', setupRoutes);
 app.use('/api', adminSetupRoutes);
 app.use('/api', testDbRoutes);
 
-// Health check
+// Health check endpoint
 app.get('/health', (_req, res) => {
   res.json({ 
     status: 'OK', 

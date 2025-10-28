@@ -1,8 +1,14 @@
 {
-  "routes": [
+  "headers": {
+    "/*": {
+      "Cache-Control": "public, max-age=0, must-revalidate"
+    }
+  },
+  "redirects": [
     {
-      "src": "/*",
-      "dest": "/index.html"
+      "source": "/*",
+      "destination": "/index.html",
+      "type": 200
     }
   ]
 }

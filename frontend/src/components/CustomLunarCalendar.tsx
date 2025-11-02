@@ -104,7 +104,7 @@ export function CustomLunarCalendar({
 
   const isVegetarianDay = (dayInfo: { day: number; month: 'prev' | 'current' | 'next' }) => {
     const lunar = getLunarDate(dayInfo);
-    return lunar.day === 1 || lunar.day === 15 || lunar.day === 30;
+    return lunar.day === 1 || lunar.day === 15;
   };
 
   const handlePrevMonth = () => {

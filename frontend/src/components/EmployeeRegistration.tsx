@@ -255,7 +255,7 @@ export function EmployeeRegistration() {
     try {
       const lunar = convertSolar2Lunar(date.getDate(), date.getMonth() + 1, date.getFullYear(), 7);
       const lunarDay = lunar[0];
-      return lunarDay === 1 || lunarDay === 15 || lunarDay === 30;
+      return lunarDay === 1 || lunarDay === 15;
     } catch (error) {
       return false;
     }

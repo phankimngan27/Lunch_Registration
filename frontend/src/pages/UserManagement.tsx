@@ -280,7 +280,7 @@ const UserManagement = () => {
                             disabled={isProcessing}
                             className={`font-medium ${user.is_active ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            {user.is_active ? 'Tắt' : 'Bật'}
+                            {user.is_active ? 'Inactive' : 'Active'}
                           </button>
                         )}
                         {(user.employee_code === 'admin' || user.email === 'admin@madison.dev') && (
@@ -347,7 +347,7 @@ const UserManagement = () => {
                         : 'bg-green-100 text-green-700 hover:bg-green-200'
                     }`}
                   >
-                    {user.is_active ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                    {user.is_active ? 'Inactive' : 'Active'}
                   </button>
                 )}
                 {(user.employee_code === 'admin' || user.email === 'admin@madison.dev') && (

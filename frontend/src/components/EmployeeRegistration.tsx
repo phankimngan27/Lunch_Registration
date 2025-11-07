@@ -402,7 +402,7 @@ export function EmployeeRegistration() {
     <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Đăng ký cơm trưa</h1>
-        <p className="text-sm sm:text-base text-gray-500">Đăng ký cơm trưa cho tháng {registrationMonthText}</p>
+        <p className="text-sm sm:text-base text-gray-500">Đăng ký cơm trưa cho {registrationMonthText}</p>
       </div>
 
       {(() => {
@@ -483,7 +483,7 @@ export function EmployeeRegistration() {
             <div>
               <p className="font-medium mb-1">Bạn chưa có đăng ký cơm trưa</p>
               <p className="text-sm">
-                Vui lòng nhấn "Bắt đầu đăng ký" bên dưới để đăng ký cơm cho tháng {registrationMonthText}.
+                Vui lòng nhấn "Bắt đầu đăng ký" bên dưới để đăng ký cơm cho {registrationMonthText}.
               </p>
             </div>
           </AlertDescription>
@@ -493,7 +493,7 @@ export function EmployeeRegistration() {
       {hasSubmitted && !isEditing && (
         <Alert>
           <AlertDescription>
-            ✅ Bạn đã đăng ký thành công cho tháng {registrationMonthText}.
+            ✅ Bạn đã đăng ký thành công cho {registrationMonthText}.
             {canRegisterForMonth(selectedMonth) && ' Nhấn "Chỉnh sửa đăng ký" để thay đổi.'}
           </AlertDescription>
         </Alert>

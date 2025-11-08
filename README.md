@@ -141,10 +141,10 @@ npm run preview          # Preview production build
 ## 📚 Tài liệu thêm
 
 - [QUICKSTART.md](QUICKSTART.md) - Hướng dẫn setup nhanh 5 phút
-- [QUICK_DEPLOY.md](QUICK_DEPLOY.md) - Deploy lên cloud 15 phút
-- [DATABASE_SETUP.md](DATABASE_SETUP.md) - Hướng dẫn database chi tiết
-- [REGISTRATION_CONFIG_GUIDE.md](REGISTRATION_CONFIG_GUIDE.md) - Cấu hình thời gian
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy production
 - [TECH_STACK.md](TECH_STACK.md) - Chi tiết công nghệ
+- [BEST_PRACTICES.md](BEST_PRACTICES.md) - Best practices và coding standards
+- [SECURITY_GUIDE.md](SECURITY_GUIDE.md) - Hướng dẫn bảo mật
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Hướng dẫn đóng góp code
 
 ## 📄 License

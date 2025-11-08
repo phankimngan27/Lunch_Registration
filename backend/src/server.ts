@@ -2,9 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
-import setupRoutes from './routes/setup';
-import adminSetupRoutes from './routes/admin-setup';
-import testDbRoutes from './routes/test-db';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { logger } from './utils/logger';
@@ -50,9 +47,6 @@ app.get('/', (_req, res) => {
 
 // Routes
 app.use('/api', routes);
-app.use('/api', setupRoutes);
-app.use('/api', adminSetupRoutes);
-app.use('/api', testDbRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

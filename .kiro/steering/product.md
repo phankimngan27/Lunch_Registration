@@ -2,6 +2,12 @@
 
 **Madison Lunch Registration System** - Internal lunch meal registration management system for Madison Technologies.
 
+## Production Environment
+- **URL**: https://lunch-booking.madlab.tech
+- **Server**: Ubuntu 25.10 on DigitalOcean (IP: 178.128.92.112)
+- **Database**: PostgreSQL 17
+- **Web Server**: Nginx 1.28.0 with Let's Encrypt SSL
+
 ## Purpose
 Web application for employees to register for daily lunch meals with admin oversight and reporting capabilities.
 
@@ -25,8 +31,9 @@ Web application for employees to register for daily lunch meals with admin overs
 - **Admin**: Full system access including user management and reporting
 
 ## Default Credentials
-- Super Admin: `admin@madison.dev` / `admin1234`
-- Sample User: `ngan.phan.thi.kim@madison.dev` / `1234`
+- **Production Admin**: `ngan.phan.thi.kim@madison.dev` / `12345`
+- **Development Super Admin**: `admin@madison.dev` / `admin1234`
+- **Development Sample User**: `ngan.phan.thi.kim@madison.dev` / `1234`
 
 ## Language
 Primary language is Vietnamese for UI and documentation.

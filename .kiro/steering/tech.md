@@ -68,6 +68,13 @@ npm run preview  # Preview production build
 - Backend: 5000
 - Frontend: 3000 (proxies `/api` to backend)
 
+## Production Environment
+- **URL**: https://lunch-booking.madlab.tech
+- **Backend**: Port 5000 (proxied by Nginx)
+- **Frontend**: Served by Nginx from `/var/www/lunch-booking/`
+- **Process Manager**: PM2 (process name: `lunch-backend`)
+- **SSL**: Let's Encrypt (auto-renewal configured)
+
 ## Environment Variables
 
 ### Backend (.env)
@@ -81,9 +88,14 @@ JWT_SECRET=your_jwt_secret
 PORT=5000
 ```
 
-### Frontend (.env)
+### Frontend (.env.development)
 ```
 VITE_API_URL=http://localhost:5000
+```
+
+### Frontend (.env.production)
+```
+VITE_API_URL=https://lunch-booking.madlab.tech/api
 ```
 
 ## Common Commands

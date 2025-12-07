@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { login, getProfile } from '../controllers/authController';
 import { getAllUsers, createUser, updateUser, toggleUserStatus } from '../controllers/userController';
-import { createRegistration, getMyRegistrations, cancelRegistration } from '../controllers/registrationController';
+import { createRegistration, getMyRegistrations, cancelRegistration, getRegistrationsByDate, createBulkRegistration, cancelBulkRegistration } from '../controllers/registrationController';
 import { getStatistics, exportExcel } from '../controllers/statisticsController';
 import { getDailyRegistrations, exportDailyExcel } from '../controllers/dailyRegistrationController';
 import { changePassword } from '../controllers/passwordController';
@@ -36,6 +36,11 @@ router.patch('/users/:id/toggle-status', authenticate, isAdmin, toggleUserStatus
 router.post('/registrations', authenticate, createRegistration);
 router.get('/registrations/my', authenticate, getMyRegistrations);
 router.post('/registrations/cancel', authenticate, cancelRegistration);
+
+// Admin: Bulk registration management
+router.get('/registrations/by-date', authenticate, isAdmin, getRegistrationsByDate);
+router.post('/registrations/bulk-create', authenticate, isAdmin, createBulkRegistration);
+router.post('/registrations/bulk-cancel', authenticate, isAdmin, cancelBulkRegistration);
 
 // Statistics routes (Admin only)
 router.get('/statistics', authenticate, isAdmin, getStatistics);

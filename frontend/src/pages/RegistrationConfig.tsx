@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import { Calendar, Users, Trash2, Plus } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
+
+interface Registration {
+  id: number;
+  user_id: number;
+  employee_code: string;
+  full_name: string;
+  email: string;
+  department: string;
+  project: string;
+  is_vegetarian: boolean;
+}
 
 const RegistrationConfig = () => {
   const { user } = useAuthStore();
@@ -12,6 +25,27 @@ const RegistrationConfig = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Bulk registration management
+  const [selectedDate, setSelectedDate] = useState('');
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: () => {}
+  });
 
   // Check if user is super admin
   const isSuperAdmin = user?.employee_code === 'admin' || user?.email === 'admin@madison.dev';
@@ -67,6 +101,88 @@ const RegistrationConfig = () => {
     }
   };
 
+  const fetchRegistrationsByDate = async (date: string) => {
+    if (!date) return;
+    
+    setLoadingRegistrations(true);
+    try {
+      const response = await api.get(`/registrations/by-date?date=${date}`);
+      setRegistrations(response.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Lỗi tải danh sách đăng ký');
+    } finally {
+      setLoadingRegistrations(false);
+    }
+  };
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    if (date) {
+      fetchRegistrationsByDate(date);
+    } else {
+      setRegistrations([]);
+    }
+  };
+
+  const handleBulkCreate = () => {
+    if (!selectedDate) {
+      toast.error('Vui lòng chọn ngày');
+      return;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Tạo đăng ký cho TẤT CẢ',
+      message: `Bạn có chắc muốn tạo đăng ký cho TẤT CẢ nhân viên active vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}?`,
+      type: 'info',
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setBulkActionLoading(true);
+        try {
+          const response = await api.post('/registrations/bulk-create', { date: selectedDate });
+          toast.success(response.data.message);
+          fetchRegistrationsByDate(selectedDate);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Lỗi tạo đăng ký hàng loạt');
+        } finally {
+          setBulkActionLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleBulkCancel = () => {
+    if (!selectedDate) {
+      toast.error('Vui lòng chọn ngày');
+      return;
+    }
+
+    if (registrations.length === 0) {
+      toast.info('Không có đăng ký nào để hủy');
+      return;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Hủy TẤT CẢ đăng ký',
+      message: `Bạn có chắc muốn HỦY TẤT CẢ ${registrations.length} đăng ký vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}?`,
+      type: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setBulkActionLoading(true);
+        try {
+          const response = await api.post('/registrations/bulk-cancel', { date: selectedDate });
+          toast.success(response.data.message);
+          fetchRegistrationsByDate(selectedDate);
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Lỗi hủy đăng ký hàng loạt');
+        } finally {
+          setBulkActionLoading(false);
+        }
+      }
+    });
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="text-center py-12">
@@ -81,14 +197,22 @@ const RegistrationConfig = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Cấu hình Thời gian Đăng ký</h1>
-        <p className="text-gray-600 mt-2">Quản lý thời gian mở và đóng đăng ký cơm trưa</p>
+        <h1 className="text-3xl font-bold">Cấu hình Hệ thống</h1>
+        <p className="text-gray-600 mt-2">Quản lý thời gian đăng ký và chỉnh sửa đăng ký theo ngày</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Time Configuration */}
+        <div className="space-y-6">
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Cấu hình Thời gian
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Monthly Cutoff Day */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -163,36 +287,157 @@ const RegistrationConfig = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
-            >
-              {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
-            </button>
-            <button
-              type="button"
-              onClick={fetchConfig}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
-            >
-              Làm mới
-            </button>
+              {/* Submit Button */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+                >
+                  {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
+                </button>
+                <button
+                  type="button"
+                  onClick={fetchConfig}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                >
+                  Làm mới
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+
+          {/* Info Box */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Lưu ý quan trọng</h3>
+            <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+              <li>Thay đổi cấu hình sẽ áp dụng ngay lập tức cho tất cả nhân viên</li>
+              <li>Ngày mở đăng ký nên đặt trước ngày 1 của tháng sau để nhân viên có thời gian đăng ký</li>
+              <li>Giờ đóng đăng ký nên đặt trước giờ làm việc kết thúc để có thời gian xử lý</li>
+              <li>Chỉ Super Admin mới có quyền thay đổi cấu hình này</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Right Column: Bulk Registration Management */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Chỉnh sửa Đăng ký theo Ngày
+            </h2>
+
+            {/* Date Picker */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn ngày
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              {selectedDate && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleBulkCreate}
+                    disabled={bulkActionLoading}
+                    className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {bulkActionLoading ? 'Đang xử lý...' : 'Tạo cho TẤT CẢ'}
+                  </button>
+                  <button
+                    onClick={handleBulkCancel}
+                    disabled={bulkActionLoading || registrations.length === 0}
+                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {bulkActionLoading ? 'Đang xử lý...' : 'Hủy TẤT CẢ'}
+                  </button>
+                </div>
+              )}
+
+              {/* Registration List */}
+              {selectedDate && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-700">
+                      Danh sách đã đăng ký ({registrations.length})
+                    </h3>
+                    <button
+                      onClick={() => fetchRegistrationsByDate(selectedDate)}
+                      disabled={loadingRegistrations}
+                      className="text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+                    >
+                      {loadingRegistrations ? 'Đang tải...' : '🔄 Làm mới'}
+                    </button>
+                  </div>
+
+                  {loadingRegistrations ? (
+                    <div className="text-center py-8 text-gray-500">Đang tải...</div>
+                  ) : registrations.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                      Chưa có ai đăng ký
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">Mã NV</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">Họ tên</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700">Phòng ban</th>
+                            <th className="px-3 py-2 text-center font-medium text-gray-700">Chay</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {registrations.map((reg) => (
+                            <tr key={reg.id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-900">{reg.employee_code}</td>
+                              <td className="px-3 py-2 text-gray-900">{reg.full_name}</td>
+                              <td className="px-3 py-2 text-gray-600">{reg.department || '-'}</td>
+                              <td className="px-3 py-2 text-center">
+                                {reg.is_vegetarian ? '🥬' : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Info Box for Bulk Actions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">💡 Hướng dẫn sử dụng</h3>
+            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+              <li><strong>Tạo cho TẤT CẢ:</strong> Tạo đăng ký cho tất cả nhân viên active (bỏ qua nếu đã có)</li>
+              <li><strong>Hủy TẤT CẢ:</strong> Xóa tất cả đăng ký trong ngày đã chọn</li>
+              <li>Danh sách hiển thị ai đã đăng ký và có ăn chay không</li>
+              <li>Thao tác này chỉ áp dụng cho ngày được chọn</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
-      {/* Info Box */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Lưu ý quan trọng</h3>
-        <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
-          <li>Thay đổi cấu hình sẽ áp dụng ngay lập tức cho tất cả nhân viên</li>
-          <li>Ngày mở đăng ký nên đặt trước ngày 1 của tháng sau để nhân viên có thời gian đăng ký</li>
-          <li>Giờ đóng đăng ký nên đặt trước giờ làm việc kết thúc để có thời gian xử lý</li>
-          <li>Chỉ Super Admin mới có quyền thay đổi cấu hình này</li>
-        </ul>
-      </div>
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        type={confirmDialog.type}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 };

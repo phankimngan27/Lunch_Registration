@@ -207,3 +207,124 @@ export const cancelRegistration = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
+
+// Admin: Lấy danh sách đăng ký theo ngày
+export const getRegistrationsByDate = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ message: 'Vui lòng chọn ngày' });
+    }
+
+    const result = await pool.query(
+      `SELECT r.id, r.user_id, r.registration_date, r.is_vegetarian,
+              u.employee_code, u.full_name, u.email, u.department, u.project
+       FROM registrations r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.registration_date = $1 AND r.status = 'active'
+       AND u.employee_code != 'admin' AND u.email != 'admin@madison.dev'
+       ORDER BY u.employee_code`,
+      [date]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Lỗi lấy danh sách đăng ký:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+// Admin: Tạo đăng ký cho TẤT CẢ nhân viên active trong ngày
+export const createBulkRegistration = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ message: 'Vui lòng chọn ngày' });
+    }
+
+    // Parse date để lấy month và year
+    const dateObj = new Date(date);
+    const month = dateObj.getMonth() + 1;
+    const year = dateObj.getFullYear();
+
+    // Lấy tất cả user active, LOẠI TRỪ super admin
+    const usersResult = await pool.query(
+      `SELECT id FROM users 
+       WHERE is_active = true 
+       AND employee_code != 'admin' 
+       AND email != 'admin@madison.dev'`
+    );
+
+    if (usersResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Không có nhân viên active' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      let created = 0;
+      let skipped = 0;
+
+      for (const user of usersResult.rows) {
+        // Check nếu đã có đăng ký
+        const existingReg = await client.query(
+          'SELECT id FROM registrations WHERE user_id = $1 AND registration_date = $2',
+          [user.id, date]
+        );
+
+        if (existingReg.rows.length === 0) {
+          await client.query(
+            `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian) 
+             VALUES ($1, $2, $3, $4, false)`,
+            [user.id, date, month, year]
+          );
+          created++;
+        } else {
+          skipped++;
+        }
+      }
+
+      await client.query('COMMIT');
+      res.json({ 
+        message: `Đã tạo ${created} đăng ký mới, bỏ qua ${skipped} đăng ký đã tồn tại`,
+        created,
+        skipped
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Lỗi tạo đăng ký hàng loạt:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+// Admin: Hủy đăng ký cho TẤT CẢ nhân viên trong ngày
+export const cancelBulkRegistration = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ message: 'Vui lòng chọn ngày' });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM registrations WHERE registration_date = $1',
+      [date]
+    );
+
+    res.json({ 
+      message: `Đã hủy ${result.rowCount} đăng ký`,
+      count: result.rowCount
+    });
+  } catch (error) {
+    console.error('Lỗi hủy đăng ký hàng loạt:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};

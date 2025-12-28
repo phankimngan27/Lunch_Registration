@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     department VARCHAR(100),
-    project VARCHAR(100),
+    phone_number VARCHAR(20),
     role VARCHAR(20) DEFAULT 'user',
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -66,13 +66,13 @@ SELECT 23, 17, 'system'
 WHERE NOT EXISTS (SELECT 1 FROM registration_config LIMIT 1);
 
 -- Tạo admin (password: 1234)
-INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) VALUES 
-('ADMIN001', 'Quản trị viên', 'admin@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Internal', 'admin')
+INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) VALUES 
+('ADMIN001', 'Quản trị viên', 'admin@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'admin')
 ON CONFLICT (email) DO NOTHING;
 
 -- Tạo user mẫu (password: 1234)
-INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) VALUES 
-('NV001', 'Phan Thị Kim Ngân', 'ngan.phan.thi.kim@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Project A', 'user')
+INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) VALUES 
+('NV001', 'Phan Thị Kim Ngân', 'ngan.phan.thi.kim@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'user')
 ON CONFLICT (email) DO NOTHING;
 `;
 

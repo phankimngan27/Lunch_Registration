@@ -555,7 +555,7 @@ export function EmployeeRegistration() {
               </div>
               <div>
                 <Label className="text-gray-500">Bộ phận</Label>
-                <p>{user?.department || 'N/A'} - {user?.project || 'N/A'}</p>
+                <p>{user?.department || 'N/A'} {user?.phone_number && `- ${user.phone_number}`}</p>
               </div>
               <div className="pt-4 border-t">
                 <div className="flex justify-between mb-2">

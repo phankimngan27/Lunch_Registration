@@ -19,9 +19,9 @@ const getCurrentUserInfo = async (userId: number) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const { search, department, project } = req.query;
+    const { search, department, phone_number } = req.query;
 
-    let query = 'SELECT id, employee_code, full_name, email, department, project, role, is_active FROM users WHERE 1=1';
+    let query = 'SELECT id, employee_code, full_name, email, department, phone_number, role, is_active FROM users WHERE 1=1';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -37,9 +37,9 @@ export const getAllUsers = async (req: Request, res: Response) => {
       paramCount++;
     }
 
-    if (project) {
-      query += ` AND project = $${paramCount}`;
-      params.push(project);
+    if (phone_number) {
+      query += ` AND phone_number = $${paramCount}`;
+      params.push(phone_number);
     }
 
     query += ' ORDER BY employee_code';
@@ -54,7 +54,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { employee_code, full_name, email, password, department, project, role } = req.body;
+    const { employee_code, full_name, email, password, department, phone_number, role } = req.body;
     const currentUser = (req as any).user;
 
     if (!employee_code || !full_name || !email || !password) {
@@ -73,9 +73,9 @@ export const createUser = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 8);
 
     const result = await pool.query(
-      `INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, employee_code, full_name, email, department, project, role`,
-      [employee_code, full_name, email, hashedPassword, department, project, role || 'user']
+      `INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, employee_code, full_name, email, department, phone_number, role`,
+      [employee_code, full_name, email, hashedPassword, department, phone_number, role || 'user']
     );
 
     logger.info('User created', { employee_code, email, role });
@@ -92,7 +92,7 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { employee_code, full_name, email, department, project, role, is_active } = req.body;
+    const { employee_code, full_name, email, department, phone_number, role, is_active } = req.body;
     const currentUser = (req as any).user;
 
     if (!employee_code || !full_name || !email) {
@@ -141,9 +141,9 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `UPDATE users SET employee_code = $1, full_name = $2, email = $3, department = $4, 
-       project = $5, role = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $8 RETURNING id, employee_code, full_name, email, department, project, role, is_active`,
-      [employee_code, full_name, email, department, project, role, is_active !== false, id]
+       phone_number = $5, role = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $8 RETURNING id, employee_code, full_name, email, department, phone_number, role, is_active`,
+      [employee_code, full_name, email, department, phone_number, role, is_active !== false, id]
     );
 
     logger.info('User updated', { id, employee_code, email });

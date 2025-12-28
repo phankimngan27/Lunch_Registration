@@ -92,7 +92,7 @@ export const login = async (req: Request, res: Response) => {
         full_name: user.full_name,
         email: user.email,
         department: user.department,
-        project: user.project,
+        phone_number: user.phone_number,
         role: user.role
       }
     });
@@ -108,7 +108,7 @@ export const getProfile = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 
     const result = await pool.query(
-      'SELECT id, employee_code, full_name, email, department, project, role FROM users WHERE id = $1',
+      'SELECT id, employee_code, full_name, email, department, phone_number, role FROM users WHERE id = $1',
       [userId]
     );
 

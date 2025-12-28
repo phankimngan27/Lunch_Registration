@@ -4,7 +4,7 @@ export interface User {
   full_name: string;
   email: string;
   department?: string;
-  project?: string;
+  phone_number?: string;
   role: 'admin' | 'user';
   is_active: boolean;
   created_at: Date;
@@ -36,5 +36,5 @@ export interface StatisticsQuery {
   month: number;
   year: number;
   department?: string;
-  project?: string;
+  phone_number?: string;
 }

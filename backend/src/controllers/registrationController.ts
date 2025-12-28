@@ -219,7 +219,7 @@ export const getRegistrationsByDate = async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `SELECT r.id, r.user_id, r.registration_date, r.is_vegetarian,
-              u.employee_code, u.full_name, u.email, u.department, u.project
+              u.employee_code, u.full_name, u.email, u.department, u.phone_number
        FROM registrations r
        JOIN users u ON r.user_id = u.id
        WHERE r.registration_date = $1 AND r.status = 'active'

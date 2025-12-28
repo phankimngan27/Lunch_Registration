@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
 const buildRegistrationQuery = (date: string, department?: string, meal_type?: string) => {
   let query = `
     SELECT 
-      u.id, u.employee_code, u.full_name, u.email, u.department, u.project,
+      u.id, u.employee_code, u.full_name, u.email, u.department, u.phone_number,
       r.is_vegetarian, r.registration_date
     FROM registrations r
     JOIN users u ON r.user_id = u.id
@@ -137,7 +137,7 @@ export const exportDailyExcel = async (req: Request, res: Response) => {
 
     // Headers
     const headerRow = worksheet.getRow(3);
-    headerRow.values = ['STT', 'Mã NV', 'Họ và tên', 'Email', 'Bộ phận', 'Dự án', 'Loại cơm', 'Giá'];
+    headerRow.values = ['STT', 'Mã NV', 'Họ và tên', 'Email', 'Bộ phận', 'SDT', 'Loại cơm', 'Giá'];
     headerRow.font = { bold: true };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
     headerRow.height = 20;
@@ -167,7 +167,7 @@ export const exportDailyExcel = async (req: Request, res: Response) => {
         row.full_name,
         row.email,
         row.department || 'N/A',
-        row.project || 'N/A',
+        row.phone_number || 'N/A',
         row.is_vegetarian ? 'Cơm chay' : 'Cơm thường',
         lunchPrice
       ];

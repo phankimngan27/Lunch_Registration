@@ -8,7 +8,7 @@ export const getStatistics = async (req: Request, res: Response) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
-    const { month, year, department, project } = req.query;
+    const { month, year, department, phone_number } = req.query;
 
     if (!month || !year) {
       return res.status(400).json({ message: 'Vui lòng chọn tháng và năm' });
@@ -21,7 +21,7 @@ export const getStatistics = async (req: Request, res: Response) => {
 
     let query = `
       SELECT 
-        u.id, u.employee_code, u.full_name, u.department, u.project,
+        u.id, u.employee_code, u.full_name, u.department, u.phone_number,
         COUNT(r.id) as total_days,
         COUNT(r.id) * ${lunchPrice} as total_amount
       FROM users u
@@ -42,12 +42,12 @@ export const getStatistics = async (req: Request, res: Response) => {
       paramCount++;
     }
 
-    if (project) {
-      query += ` AND u.project = $${paramCount}`;
-      params.push(project);
+    if (phone_number) {
+      query += ` AND u.phone_number = $${paramCount}`;
+      params.push(phone_number);
     }
 
-    query += ' GROUP BY u.id, u.employee_code, u.full_name, u.department, u.project ORDER BY u.employee_code';
+    query += ' GROUP BY u.id, u.employee_code, u.full_name, u.department, u.phone_number ORDER BY u.employee_code';
 
     const result = await pool.query(query, params);
     
@@ -66,7 +66,7 @@ export const getStatistics = async (req: Request, res: Response) => {
 
 export const exportExcel = async (req: Request, res: Response) => {
   try {
-    const { month, year, department, project } = req.query;
+    const { month, year, department, phone_number } = req.query;
 
     if (!month || !year) {
       return res.status(400).json({ message: 'Vui lòng chọn tháng và năm' });
@@ -83,7 +83,7 @@ export const exportExcel = async (req: Request, res: Response) => {
     const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
 
     let userQuery = `
-      SELECT u.id, u.employee_code, u.full_name, u.department, u.project
+      SELECT u.id, u.employee_code, u.full_name, u.department, u.phone_number
       FROM users u
       WHERE u.is_active = true 
         AND u.employee_code != 'admin' 
@@ -99,9 +99,9 @@ export const exportExcel = async (req: Request, res: Response) => {
       paramCount++;
     }
 
-    if (project) {
-      userQuery += ` AND u.project = $${paramCount}`;
-      params.push(project);
+    if (phone_number) {
+      userQuery += ` AND u.phone_number = $${paramCount}`;
+      params.push(phone_number);
     }
 
     userQuery += ' ORDER BY u.employee_code';

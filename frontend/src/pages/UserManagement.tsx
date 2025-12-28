@@ -33,7 +33,7 @@ const UserManagement = () => {
     password: '',
     newPassword: '', // Thêm field cho đổi mật khẩu
     department: '',
-    project: '',
+    phone_number: '',
     role: 'user'
   });
 
@@ -89,9 +89,9 @@ const UserManagement = () => {
       full_name: user.full_name,
       email: user.email,
       password: '',
-      newPassword: '', // Reset field đổi mật khẩu
+      newPassword: '',
       department: user.department || '',
-      project: user.project || '',
+      phone_number: user.phone_number || '',
       role: user.role
     });
     setShowModal(true);
@@ -145,7 +145,7 @@ const UserManagement = () => {
       password: '',
       newPassword: '',
       department: '',
-      project: '',
+      phone_number: '',
       role: 'user'
     });
     setEditingUser(null);
@@ -233,7 +233,7 @@ const UserManagement = () => {
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Họ tên</th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bộ phận</th>
-                <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dự án</th>
+                <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SDT</th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vai trò</th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
                 <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
@@ -253,7 +253,7 @@ const UserManagement = () => {
                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">{user.full_name}</td>
                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
                     <td className="hidden lg:table-cell px-4 lg:px-6 py-4 whitespace-nowrap text-sm">{user.department || 'N/A'}</td>
-                    <td className="hidden lg:table-cell px-4 lg:px-6 py-4 whitespace-nowrap text-sm">{user.project || 'N/A'}</td>
+                    <td className="hidden lg:table-cell px-4 lg:px-6 py-4 whitespace-nowrap text-sm">{user.phone_number || 'N/A'}</td>
                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
                         {user.role}
@@ -321,10 +321,10 @@ const UserManagement = () => {
                 </div>
               </div>
               
-              {(user.department || user.project) && (
+              {(user.department || user.phone_number) && (
                 <div className="text-xs text-gray-600 space-y-1 pt-2 border-t">
                   {user.department && <div>Bộ phận: {user.department}</div>}
-                  {user.project && <div>Dự án: {user.project}</div>}
+                  {user.phone_number && <div>SDT: {user.phone_number}</div>}
                 </div>
               )}
 
@@ -428,13 +428,21 @@ const UserManagement = () => {
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 className="w-full px-3 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <input
-                type="text"
-                placeholder="Dự án"
-                value={formData.project}
-                onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                className="w-full px-3 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="SDT"
+                  autoComplete="tel"
+                  value={formData.phone_number}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').substring(0, 15);
+                    setFormData({ ...formData, phone_number: val });
+                  }}
+                  className="w-full px-3 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">* Chỉ được nhập số (0-9), tối đa 15 ký tự</p>
+              </div>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}

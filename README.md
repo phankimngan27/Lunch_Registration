@@ -138,6 +138,22 @@ npm run build            # Build production
 npm run preview          # Preview production build
 ```
 
+## � Dàatabase Migrations
+
+Nếu cần chạy migration (ví dụ: cập nhật schema):
+
+```bash
+# Backup database trước
+pg_dump -U postgres lunch_registration > backup.sql
+
+# Chạy migration script
+psql -U postgres -d lunch_registration -f database/migrate-*.sql
+
+# Rebuild và restart
+cd backend && npm run build
+cd frontend && npm run build
+```
+
 ## 📚 Tài liệu thêm
 
 - [QUICKSTART.md](QUICKSTART.md) - Hướng dẫn setup nhanh 5 phút

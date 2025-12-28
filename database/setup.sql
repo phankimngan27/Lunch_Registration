@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     department VARCHAR(100),
-    project VARCHAR(100),
+    phone_number VARCHAR(20),
     role VARCHAR(20) DEFAULT 'user', -- 'admin' hoặc 'user'
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -71,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_registrations_date ON registrations(registration_
 CREATE INDEX IF NOT EXISTS idx_registrations_month_year ON registrations(month, year);
 CREATE INDEX IF NOT EXISTS idx_registrations_is_vegetarian ON registrations(is_vegetarian);
 CREATE INDEX IF NOT EXISTS idx_users_department ON users(department);
-CREATE INDEX IF NOT EXISTS idx_users_project ON users(project);
+CREATE INDEX IF NOT EXISTS idx_users_phone_number ON users(phone_number);
 
 -- =====================================================
 -- Bước 4: Thêm dữ liệu cấu hình
@@ -92,17 +92,17 @@ WHERE NOT EXISTS (SELECT 1 FROM registration_config LIMIT 1);
 -- =====================================================
 
 -- Admin
-INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) VALUES 
-('ADMIN001', 'Quản trị viên', 'admin@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Internal', 'admin')
+INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) VALUES 
+('ADMIN001', 'Quản trị viên', 'admin@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'admin')
 ON CONFLICT (email) DO NOTHING;
 
 -- Nhân viên mẫu
-INSERT INTO users (employee_code, full_name, email, password_hash, department, project, role) VALUES 
-('NV001', 'Phan Thị Kim Ngân', 'ngan.phan.thi.kim@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Project A', 'user'),
-('NV002', 'Trần Văn An', 'an.tran.van@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HR', 'Project B', 'user'),
-('NV003', 'Lê Thị Bình', 'binh.le.thi@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Project A', 'user'),
-('NV004', 'Nguyễn Văn Cường', 'cuong.nguyen.van@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Marketing', 'Project C', 'user'),
-('NV005', 'Phạm Thị Dung', 'dung.pham.thi@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', 'Project B', 'user')
+INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) VALUES 
+('NV001', 'Phan Thị Kim Ngân', 'ngan.phan.thi.kim@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'user'),
+('NV002', 'Trần Văn An', 'an.tran.van@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HR', NULL, 'user'),
+('NV003', 'Lê Thị Bình', 'binh.le.thi@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'user'),
+('NV004', 'Nguyễn Văn Cường', 'cuong.nguyen.van@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Marketing', NULL, 'user'),
+('NV005', 'Phạm Thị Dung', 'dung.pham.thi@madison.dev', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'IT', NULL, 'user')
 ON CONFLICT (email) DO NOTHING;
 
 -- =====================================================

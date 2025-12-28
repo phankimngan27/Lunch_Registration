@@ -30,10 +30,10 @@ const Dashboard = () => {
                   <span className="font-semibold">{user.department}</span>
                 </div>
               )}
-              {user?.project && (
+              {user?.phone_number && (
                 <div className="flex items-center gap-2">
-                  <span className="opacity-80">📁</span>
-                  <span className="font-semibold">{user.project}</span>
+                  <span className="opacity-80">📞</span>
+                  <span className="font-semibold">{user.phone_number}</span>
                 </div>
               )}
             </div>

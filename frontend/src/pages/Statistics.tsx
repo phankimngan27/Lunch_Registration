@@ -109,7 +109,7 @@ const Statistics = () => {
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã NV</th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Họ tên</th>
                     <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bộ phận</th>
-                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dự án</th>
+                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SDT</th>
                     <th className="px-4 lg:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Số ngày</th>
                     <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Thành tiền</th>
                   </tr>
@@ -120,7 +120,7 @@ const Statistics = () => {
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm">{row.employee_code}</td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium">{row.full_name}</td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.department || 'N/A'}</td>
-                      <td className="hidden lg:table-cell px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.project || 'N/A'}</td>
+                      <td className="hidden lg:table-cell px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.phone_number || 'N/A'}</td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-center font-semibold">{row.total_days}</td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-bold text-right text-green-600">
                         {parseInt(row.total_amount).toLocaleString('vi-VN')} đ
@@ -142,8 +142,8 @@ const Statistics = () => {
                       {row.department && (
                         <div className="text-xs text-gray-500 mt-1">Bộ phận: {row.department}</div>
                       )}
-                      {row.project && (
-                        <div className="text-xs text-gray-500">Dự án: {row.project}</div>
+                      {row.phone_number && (
+                        <div className="text-xs text-gray-500">SDT: {row.phone_number}</div>
                       )}
                     </div>
                   </div>

@@ -8,7 +8,7 @@ interface Registration {
   full_name: string;
   email: string;
   department: string;
-  project: string;
+  phone_number: string;
   is_vegetarian: boolean;
 }
 
@@ -230,7 +230,7 @@ const DailyRegistrations = () => {
                     <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Mã NV</th>
                     <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Họ và tên</th>
                     <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Bộ phận</th>
-                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Dự án</th>
+                    <th className="hidden lg:table-cell px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">SDT</th>
                     <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Loại cơm</th>
                     <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Giá</th>
                   </tr>
@@ -262,7 +262,7 @@ const DailyRegistrations = () => {
                         {reg.department || 'N/A'}
                       </td>
                       <td className="hidden lg:table-cell px-4 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-700">
-                        {reg.project || 'N/A'}
+                        {reg.phone_number || 'N/A'}
                       </td>
                       <td className="px-4 lg:px-6 py-3 lg:py-4 whitespace-nowrap">
                         {reg.is_vegetarian ? (
@@ -314,8 +314,8 @@ const DailyRegistrations = () => {
                       <div className="font-medium text-gray-900">{reg.department || 'N/A'}</div>
                     </div>
                     <div>
-                      <span className="text-gray-500">Dự án:</span>
-                      <div className="font-medium text-gray-900">{reg.project || 'N/A'}</div>
+                      <span className="text-gray-500">SDT:</span>
+                      <div className="font-medium text-gray-900">{reg.phone_number || 'N/A'}</div>
                     </div>
                   </div>
 

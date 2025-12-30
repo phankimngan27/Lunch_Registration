@@ -52,7 +52,7 @@ export const getStatistics = async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     
     const summary = {
-      total_employees: result.rows.length,
+      total_employees: result.rows.filter(row => parseInt(row.total_days) > 0).length,
       total_registrations: result.rows.reduce((sum, row) => sum + parseInt(row.total_days), 0),
       total_amount: result.rows.reduce((sum, row) => sum + parseInt(row.total_amount), 0)
     };

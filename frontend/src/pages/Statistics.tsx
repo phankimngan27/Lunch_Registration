@@ -92,7 +92,7 @@ const Statistics = () => {
                 <p className="text-2xl sm:text-3xl font-bold text-blue-700">{data.summary.total_employees}</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                <p className="text-xs sm:text-sm text-gray-600 mb-1">Tổng số ngày</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-1">Tổng bữa ăn</p>
                 <p className="text-2xl sm:text-3xl font-bold text-green-700">{data.summary.total_registrations}</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">

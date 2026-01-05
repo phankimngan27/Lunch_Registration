@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import ExcelJS from 'exceljs';
 import pool from '../config/database';
 import { logger } from '../utils/logger';
+import { validateDateFormat } from '../utils/validation';
 
 // Helper function to build query with filters
 const buildRegistrationQuery = (date: string, department?: string, meal_type?: string) => {
@@ -54,40 +55,54 @@ export const getDailyRegistrations = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Vui lòng chọn ngày' });
     }
 
+    // Validate date format
+    const dateValidation = validateDateFormat(date as string);
+    if (!dateValidation.valid) {
+      return res.status(400).json({ message: dateValidation.message });
+    }
+
     // Get lunch price and build query
     const lunchPrice = await getLunchPrice();
-    const { query, params } = buildRegistrationQuery(
-      date as string, 
-      department as string, 
-      meal_type as string
-    );
+    
+    try {
+      const { query, params } = buildRegistrationQuery(
+        date as string, 
+        department as string, 
+        meal_type as string
+      );
 
-    logger.dbQuery(query, params);
-    const result = await pool.query(query, params);
+      logger.dbQuery(query, params);
+      const result = await pool.query(query, params);
 
-    // Calculate summary
-    const totalPeople = result.rows.length;
-    const normalCount = result.rows.filter(r => !r.is_vegetarian).length;
-    const vegetarianCount = result.rows.filter(r => r.is_vegetarian).length;
-    const totalAmount = totalPeople * lunchPrice;
+      // Calculate summary
+      const totalPeople = result.rows.length;
+      const normalCount = result.rows.filter(r => !r.is_vegetarian).length;
+      const vegetarianCount = result.rows.filter(r => r.is_vegetarian).length;
+      const totalAmount = totalPeople * lunchPrice;
 
-    logger.info('Daily registrations retrieved', {
-      date,
-      totalPeople,
-      normalCount,
-      vegetarianCount
-    });
+      logger.info('Daily registrations retrieved', {
+        date,
+        totalPeople,
+        normalCount,
+        vegetarianCount
+      });
 
-    res.json({
-      summary: {
-        total_people: totalPeople,
-        normal_count: normalCount,
-        vegetarian_count: vegetarianCount,
-        total_amount: totalAmount,
-        lunch_price: lunchPrice
-      },
-      registrations: result.rows
-    });
+      res.json({
+        summary: {
+          total_people: totalPeople,
+          normal_count: normalCount,
+          vegetarian_count: vegetarianCount,
+          total_amount: totalAmount,
+          lunch_price: lunchPrice
+        },
+        registrations: result.rows
+      });
+    } catch (queryError: any) {
+      if (queryError.message.includes('Loại cơm không hợp lệ')) {
+        return res.status(400).json({ message: queryError.message });
+      }
+      throw queryError;
+    }
   } catch (error: any) {
     logger.error('Failed to get daily registrations', error, { 
       date: req.query.date, 

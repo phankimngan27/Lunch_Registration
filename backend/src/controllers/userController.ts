@@ -2,6 +2,14 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import pool from '../config/database';
 import { logger } from '../utils/logger';
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePhoneNumber, 
+  validateEmployeeCode, 
+  validateFullName, 
+  validateDepartment 
+} from '../utils/validation';
 
 // Helper function to check if user is super admin
 const isSuperAdmin = (employee_code: string, email: string): boolean => {
@@ -61,6 +69,46 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin bắt buộc' });
     }
 
+    // Validate employee code
+    const codeValidation = validateEmployeeCode(employee_code);
+    if (!codeValidation.valid) {
+      return res.status(400).json({ message: codeValidation.message });
+    }
+
+    // Validate full name
+    const nameValidation = validateFullName(full_name);
+    if (!nameValidation.valid) {
+      return res.status(400).json({ message: nameValidation.message });
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      return res.status(400).json({ message: emailValidation.message });
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ message: passwordValidation.message });
+    }
+
+    // Validate phone number
+    if (phone_number) {
+      const phoneValidation = validatePhoneNumber(phone_number);
+      if (!phoneValidation.valid) {
+        return res.status(400).json({ message: phoneValidation.message });
+      }
+    }
+
+    // Validate department
+    if (department) {
+      const deptValidation = validateDepartment(department);
+      if (!deptValidation.valid) {
+        return res.status(400).json({ message: deptValidation.message });
+      }
+    }
+
     // Check if current user is super admin
     const currentUserInfo = await getCurrentUserInfo(currentUser.id);
     const isCurrentUserSuperAdmin = isSuperAdmin(currentUserInfo.employee_code, currentUserInfo.email);
@@ -70,7 +118,8 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Bạn không có quyền tạo tài khoản admin' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 8);
+    // Use bcrypt with 10 rounds for better security
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
       `INSERT INTO users (employee_code, full_name, email, password_hash, department, phone_number, role) 

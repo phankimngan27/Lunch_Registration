@@ -1,5 +1,13 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { 
+  validateMonth, 
+  validateYear, 
+  validateRegistrationDates,
+  validateDateFormat,
+  isWeekend,
+  isPastDate
+} from '../utils/validation';
 
 export const createRegistration = async (req: Request, res: Response) => {
   try {
@@ -8,6 +16,107 @@ export const createRegistration = async (req: Request, res: Response) => {
 
     if (!dates || !Array.isArray(dates)) {
       return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
+    }
+
+    // Validate month and year
+    if (month !== undefined) {
+      const monthValidation = validateMonth(month);
+      if (!monthValidation.valid) {
+        return res.status(400).json({ message: monthValidation.message });
+      }
+    }
+
+    if (year !== undefined) {
+      const yearValidation = validateYear(year);
+      if (!yearValidation.valid) {
+        return res.status(400).json({ message: yearValidation.message });
+      }
+    }
+
+    // Validate dates array (check format and weekends)
+    if (dates.length > 0) {
+      const datesValidation = validateRegistrationDates(dates);
+      if (!datesValidation.valid) {
+        return res.status(400).json({ message: datesValidation.message });
+      }
+    }
+
+    // Kiểm tra thời gian đăng ký
+    if (month && year) {
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentHour = today.getHours();
+      const currentMonth = today.getMonth() + 1; // 1-12
+      const currentYear = today.getFullYear();
+
+      // Lấy cấu hình từ database
+      const configResult = await pool.query(
+        'SELECT monthly_cutoff_day, daily_deadline_hour FROM registration_config LIMIT 1'
+      );
+      const monthlyCutoffDay = configResult.rows[0]?.monthly_cutoff_day || 25;
+      const dailyDeadlineHour = configResult.rows[0]?.daily_deadline_hour || 20;
+
+      // Kiểm tra xem tháng được đăng ký có hợp lệ không
+      const isCurrentMonth = month === currentMonth && year === currentYear;
+      
+      // Tính tháng kế tiếp
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+      const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+      const isNextMonth = month === nextMonth && year === nextYear;
+
+      // Chỉ cho phép đăng ký cho:
+      // 1. Tháng hiện tại
+      // 2. Tháng kế tiếp (nếu đã qua ngày cutoff)
+      if (!isCurrentMonth && !isNextMonth) {
+        return res.status(403).json({ 
+          message: 'Bạn chỉ có thể đăng ký cho tháng hiện tại hoặc tháng kế tiếp' 
+        });
+      }
+
+      // Nếu đăng ký cho tháng kế tiếp, kiểm tra xem đã qua ngày cutoff chưa
+      if (isNextMonth && currentDay < monthlyCutoffDay) {
+        return res.status(403).json({ 
+          message: `Chưa đến thời gian đăng ký cho tháng ${month}/${year}. Vui lòng đợi đến ngày ${monthlyCutoffDay} tháng ${currentMonth}.` 
+        });
+      }
+
+      // Kiểm tra daily deadline cho từng ngày
+      if (dates.length > 0) {
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const tomorrow = new Date(todayStart);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        for (const dateStr of dates) {
+          const dateValidation = validateDateFormat(dateStr);
+          if (!dateValidation.valid || !dateValidation.date) {
+            return res.status(400).json({ message: `Ngày không hợp lệ: ${dateStr}` });
+          }
+
+          const registrationDate = dateValidation.date;
+          const regDateStart = new Date(registrationDate.getFullYear(), registrationDate.getMonth(), registrationDate.getDate());
+
+          // Không cho phép đăng ký cho ngày quá khứ
+          if (regDateStart < todayStart) {
+            return res.status(403).json({ 
+              message: `Không thể đăng ký cho ngày quá khứ: ${dateStr}` 
+            });
+          }
+
+          // Không cho phép đăng ký cho ngày hôm nay
+          if (regDateStart.getTime() === todayStart.getTime()) {
+            return res.status(403).json({ 
+              message: `Không thể đăng ký cho ngày hôm nay. Deadline là ${dailyDeadlineHour}:00 hôm qua.` 
+            });
+          }
+
+          // Nếu là ngày mai, kiểm tra deadline
+          if (regDateStart.getTime() === tomorrow.getTime() && currentHour >= dailyDeadlineHour) {
+            return res.status(403).json({ 
+              message: `Đã hết thời gian đăng ký cho ngày ${dateStr}. Deadline là ${dailyDeadlineHour}:00 hôm nay.` 
+            });
+          }
+        }
+      }
     }
 
     // Nếu không có ngày nào được chọn, xóa tất cả đăng ký của tháng

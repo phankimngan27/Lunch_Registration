@@ -15,14 +15,18 @@ if (databaseUrl) {
 
   poolConfig = {
     connectionString: databaseUrl,
-    max: 20,
+    max: 30, // Increased from 20 for better concurrency
+    min: 5, // Keep minimum connections alive
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: isNeon ? 30000 : 10000, // Neon needs more time for cold start
     // Neon requires SSL, Railway internal doesn't
     ssl: isNeon ? { rejectUnauthorized: false } : false,
     // Keep connections alive to prevent cold starts
     keepAlive: true,
-    keepAliveInitialDelayMillis: 10000
+    keepAliveInitialDelayMillis: 10000,
+    // Performance tuning
+    statement_timeout: 10000, // 10 second query timeout
+    query_timeout: 10000
   };
 
   logger.info('Database pool configured', {
@@ -36,9 +40,13 @@ if (databaseUrl) {
     database: process.env.DB_NAME || 'lunch_registration',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
-    max: 20,
+    max: 30, // Increased from 20 for better concurrency
+    min: 5, // Keep minimum connections alive
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
+    // Performance tuning
+    statement_timeout: 10000, // 10 second query timeout
+    query_timeout: 10000
   };
 }
 

@@ -111,6 +111,17 @@ export function EmployeeRegistration() {
 
   const isRegistrationOpen = canRegisterForMonth(selectedMonth);
 
+  // Helper function to check if a date is a vegetarian day (lunar 1st or 15th)
+  const isVegetarianDay = (date: Date) => {
+    try {
+      const lunar = convertSolar2Lunar(date.getDate(), date.getMonth() + 1, date.getFullYear(), 7);
+      const lunarDay = lunar[0];
+      return lunarDay === 1 || lunarDay === 15;
+    } catch (error) {
+      return false;
+    }
+  };
+
   // Load tất cả registrations và check hasSubmitted cho tháng hiện tại
   const fetchRegistrations = async () => {
     try {
@@ -190,11 +201,19 @@ export function EmployeeRegistration() {
   const totalDays = datesInCurrentMonth.length;
   const totalAmount = totalDays * PRICE_PER_DAY;
 
-  // Chỉ đếm vegetarian dates của tháng hiện tại
+  // FIX: Chỉ đếm vegetarian dates của tháng hiện tại VÀ thực sự là ngày chay (rằm/mùng 1)
   const vegetarianDatesInMonth = Array.from(vegetarianDates).filter(dateKey => {
     // Parse dateKey "YYYY-MM-DD" correctly without timezone issues
-    const [year, month] = dateKey.split('-').map(Number);
-    return month - 1 === selectedMonth.getMonth() && year === selectedMonth.getFullYear();
+    const [year, month, day] = dateKey.split('-').map(Number);
+    
+    // Kiểm tra có thuộc tháng đang xem không
+    if (month - 1 !== selectedMonth.getMonth() || year !== selectedMonth.getFullYear()) {
+      return false;
+    }
+    
+    // Kiểm tra ngày đó có thực sự là ngày chay không (rằm/mùng 1)
+    const date = new Date(year, month - 1, day);
+    return isVegetarianDay(date);
   });
   
   const vegetarianCount = vegetarianDatesInMonth.length;
@@ -248,16 +267,6 @@ export function EmployeeRegistration() {
       }
     } else {
       setSelectedDates([...selectedDates, date]);
-    }
-  };
-
-  const isVegetarianDay = (date: Date) => {
-    try {
-      const lunar = convertSolar2Lunar(date.getDate(), date.getMonth() + 1, date.getFullYear(), 7);
-      const lunarDay = lunar[0];
-      return lunarDay === 1 || lunarDay === 15;
-    } catch (error) {
-      return false;
     }
   };
 
@@ -617,7 +626,17 @@ export function EmployeeRegistration() {
                       const month = String(date.getMonth() + 1).padStart(2, '0');
                       const day = String(date.getDate()).padStart(2, '0');
                       const dateKey = `${year}-${month}-${day}`;
+                      
+                      // FIX: Chỉ hiển thị badge "Chay" nếu ngày này THỰC SỰ là ngày chay (rằm/mùng 1)
+                      // Không dựa vào vegetarianDates từ backend vì có thể chứa data từ tháng khác
                       const isVegetarian = vegetarianDates.has(dateKey);
+                      const isActualVegetarianDay = isVegetarianDay(date);
+                      
+                      // Chỉ hiển thị badge nếu:
+                      // 1. User đã chọn ăn chay (isVegetarian = true)
+                      // 2. VÀ ngày đó thực sự là ngày rằm/mùng 1 (isActualVegetarianDay = true)
+                      const shouldShowVegetarianBadge = isVegetarian && isActualVegetarianDay;
+                      
                       return (
                         <div
                           key={date.toISOString()}
@@ -630,7 +649,7 @@ export function EmployeeRegistration() {
                               month: "2-digit",
                               year: "numeric",
                             })}
-                            {isVegetarian && (
+                            {shouldShowVegetarianBadge && (
                               <Badge variant="outline" className="text-green-600 border-green-600">
                                 <Leaf className="w-3 h-3 mr-1" />
                                 Chay

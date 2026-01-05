@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -29,6 +30,18 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Enable gzip compression for all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6 // Balance between speed and compression ratio
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

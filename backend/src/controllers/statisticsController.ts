@@ -4,9 +4,8 @@ import pool from '../config/database';
 
 export const getStatistics = async (req: Request, res: Response) => {
   try {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    // Add caching for statistics (cache for 2 minutes)
+    res.setHeader('Cache-Control', 'private, max-age=120');
     
     const { month, year, department, phone_number } = req.query;
 
@@ -108,6 +107,7 @@ export const exportExcel = async (req: Request, res: Response) => {
 
     const usersResult = await pool.query(userQuery, params);
 
+    // Optimized query - will use idx_registrations_month_year index
     const regsResult = await pool.query(
       `SELECT user_id, EXTRACT(DAY FROM registration_date) as day, is_vegetarian FROM registrations 
        WHERE month = $1 AND year = $2 AND status = 'active'`,

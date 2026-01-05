@@ -5,6 +5,7 @@ import {
   validateYear, 
   validateRegistrationDates,
   validateDateFormat,
+  validateVegetarianDates,
   isWeekend,
   isPastDate
 } from '../utils/validation';
@@ -40,6 +41,15 @@ export const createRegistration = async (req: Request, res: Response) => {
         return res.status(400).json({ message: datesValidation.message });
       }
     }
+
+    // CRITICAL: Validate vegetarian dates to prevent API abuse
+    // This ensures users can only mark actual lunar 1st/15th as vegetarian
+    const vegetarianValidation = validateVegetarianDates(vegetarianDates, dates);
+    if (!vegetarianValidation.valid) {
+      return res.status(400).json({ message: vegetarianValidation.message });
+    }
+    // Use validated vegetarian dates (filtered to only actual vegetarian days)
+    const validatedVegetarianDates = vegetarianValidation.validatedDates || {};
 
     // Kiểm tra thời gian đăng ký
     if (month && year) {
@@ -226,7 +236,8 @@ export const createRegistration = async (req: Request, res: Response) => {
       // Thêm các ngày mới (đã được lọc theo tháng đang xem)
       const insertedDates = [];
       for (const date of newDates) {
-        const isVegetarian = vegetarianDates && vegetarianDates[date] === true;
+        // Use validated vegetarian dates instead of raw input
+        const isVegetarian = validatedVegetarianDates && validatedVegetarianDates[date] === true;
         const result = await client.query(
           `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian) 
            VALUES ($1, $2::date, $3, $4, $5) 
@@ -240,7 +251,8 @@ export const createRegistration = async (req: Request, res: Response) => {
       const datesToUpdate = datesInCurrentMonth.filter(d => existingRegs.includes(d));
       if (datesToUpdate.length > 0) {
         for (const date of datesToUpdate) {
-          const isVegetarian = vegetarianDates && vegetarianDates[date] === true;
+          // Use validated vegetarian dates instead of raw input
+          const isVegetarian = validatedVegetarianDates && validatedVegetarianDates[date] === true;
           await client.query(
             `UPDATE registrations 
              SET is_vegetarian = $1, updated_at = CURRENT_TIMESTAMP
@@ -272,7 +284,10 @@ export const getMyRegistrations = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const { month, year } = req.query;
 
-    // Select với TO_CHAR để trả về date string thay vì timestamp, tránh lệch timezone
+    // Add caching headers for better performance
+    res.setHeader('Cache-Control', 'private, max-age=60'); // Cache for 1 minute
+
+    // Optimized query with proper index usage
     let query = `SELECT id, user_id, 
                         TO_CHAR(registration_date, 'YYYY-MM-DD') as registration_date, 
                         month, year, status, is_vegetarian, created_at 
@@ -281,6 +296,7 @@ export const getMyRegistrations = async (req: Request, res: Response) => {
     const params: any[] = [userId, 'active'];
 
     if (month && year) {
+      // This will use idx_registrations_user_month_year index
       query += ` AND month = $3 AND year = $4`;
       params.push(parseInt(month as string), parseInt(year as string));
     }
@@ -337,6 +353,10 @@ export const getRegistrationsByDate = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Vui lòng chọn ngày' });
     }
 
+    // Add caching headers
+    res.setHeader('Cache-Control', 'private, max-age=300'); // Cache for 5 minutes
+
+    // Optimized query - will use idx_registrations_date_status index
     const result = await pool.query(
       `SELECT r.id, r.user_id, r.registration_date, r.is_vegetarian,
               u.employee_code, u.full_name, u.email, u.department, u.phone_number

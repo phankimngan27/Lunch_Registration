@@ -1,3 +1,5 @@
+import { isVegetarianDay } from './lunarCalendar';
+
 // Validation utilities for input sanitization and validation
 
 /**
@@ -231,4 +233,65 @@ export const validateRegistrationDates = (dates: any[]): { valid: boolean; messa
   }
 
   return { valid: true, validDates };
+};
+
+/**
+ * Validate vegetarian dates object
+ * CRITICAL: Prevents API abuse by validating that vegetarian dates are actually lunar 1st or 15th
+ */
+export const validateVegetarianDates = (
+  vegetarianDates: any,
+  registrationDates: string[]
+): { valid: boolean; message?: string; validatedDates?: { [key: string]: boolean } } => {
+  // If no registration dates (cancelling all), no need to validate vegetarian dates
+  if (!registrationDates || registrationDates.length === 0) {
+    return { valid: true, validatedDates: {} };
+  }
+
+  // If no vegetarian dates provided, return empty object
+  if (!vegetarianDates || typeof vegetarianDates !== 'object') {
+    return { valid: true, validatedDates: {} };
+  }
+
+  const validatedDates: { [key: string]: boolean } = {};
+  const invalidDates: string[] = [];
+
+  // Check each vegetarian date
+  for (const dateStr in vegetarianDates) {
+    // Only process if value is true
+    if (vegetarianDates[dateStr] !== true) {
+      continue;
+    }
+
+    // Validate date format
+    const dateValidation = validateDateFormat(dateStr);
+    if (!dateValidation.valid || !dateValidation.date) {
+      return { valid: false, message: `Ngày chay không hợp lệ: ${dateStr}` };
+    }
+
+    // CRITICAL: Check if date is actually a vegetarian day (lunar 1st or 15th)
+    const isActualVegetarianDay = isVegetarianDay(dateValidation.date);
+    if (!isActualVegetarianDay) {
+      invalidDates.push(dateStr);
+      continue; // Skip this date, don't add to validatedDates
+    }
+
+    // Check if date is in registration dates
+    if (!registrationDates.includes(dateStr)) {
+      return { valid: false, message: `Ngày chay ${dateStr} không có trong danh sách đăng ký` };
+    }
+
+    // Valid vegetarian date
+    validatedDates[dateStr] = true;
+  }
+
+  // If there are invalid dates, return error with details
+  if (invalidDates.length > 0) {
+    return {
+      valid: false,
+      message: `Các ngày sau không phải là ngày rằm/mùng 1 âm lịch: ${invalidDates.join(', ')}. Chỉ được đăng ký ăn chay vào ngày rằm (15) hoặc mùng 1 âm lịch.`
+    };
+  }
+
+  return { valid: true, validatedDates };
 };

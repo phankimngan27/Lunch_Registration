@@ -84,15 +84,17 @@ export const validateDateFormat = (dateStr: string): { valid: boolean; message?:
     return { valid: false, message: 'Định dạng ngày phải là YYYY-MM-DD' };
   }
 
-  // Parse and validate date
-  const date = new Date(dateStr);
+  // Parse date correctly to avoid timezone issues
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+  
   if (isNaN(date.getTime())) {
     return { valid: false, message: 'Ngày không hợp lệ' };
   }
 
   // Check if date is not too far in the past or future
-  const minDate = new Date('2020-01-01');
-  const maxDate = new Date('2100-12-31');
+  const minDate = new Date(2020, 0, 1);
+  const maxDate = new Date(2100, 11, 31);
   if (date < minDate || date > maxDate) {
     return { valid: false, message: 'Ngày phải trong khoảng 2020-2100' };
   }

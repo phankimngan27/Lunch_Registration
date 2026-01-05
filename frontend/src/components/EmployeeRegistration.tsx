@@ -15,10 +15,6 @@ const PRICE_PER_DAY = 20000;
 
 export function EmployeeRegistration() {
   const { user } = useAuthStore();
-  const today = new Date();
-  const currentDay = today.getDate();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
 
   // State cho config
   const [config, setConfig] = useState({
@@ -28,17 +24,22 @@ export function EmployeeRegistration() {
 
   const getInitialMonth = () => {
     // Luôn hiện tháng hiện tại khi vào trang
-    return new Date(today.getFullYear(), today.getMonth(), 1);
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   };
 
   // Kiểm tra xem có thể chỉnh sửa một ngày cụ thể không
   const canEditDate = (date: Date): boolean => {
-    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const currentHour = today.getHours();
+    // Tính today mỗi lần để đảm bảo chính xác
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const currentHour = now.getHours();
+    
+    // Chuẩn hóa ngày cần kiểm tra về 00:00:00
+    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 
     // Không cho phép sửa ngày quá khứ
-    if (dateStart < todayStart) {
+    if (dateStart.getTime() < todayStart.getTime()) {
       return false;
     }
 
@@ -46,24 +47,25 @@ export function EmployeeRegistration() {
     const tomorrow = new Date(todayStart);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Nếu là ngày hôm nay: chỉ sửa được nếu trước deadline (20:00 hôm qua)
-    // Vì đã qua 20:00 hôm qua thì không được sửa ngày hôm nay nữa
+    // Nếu là ngày hôm nay: không cho phép edit
     if (dateStart.getTime() === todayStart.getTime()) {
-      // Ngày hôm nay không được phép edit vì deadline là 20:00 hôm qua
       return false;
     }
 
-    // Nếu là ngày mai: chỉ sửa được nếu trước 20:00 hôm nay
+    // Nếu là ngày mai: chỉ sửa được nếu trước deadline hôm nay
     if (dateStart.getTime() === tomorrow.getTime()) {
       return currentHour < config.daily_deadline_hour;
     }
 
     // Nếu là ngày trong tháng hiện tại (từ ngày kia trở đi): luôn cho phép sửa
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
     if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
       return true;
     }
 
-    // Nếu là ngày tháng kế tiếp: chỉ cho phép nếu đã qua ngày 25
+    // Nếu là ngày tháng kế tiếp: chỉ cho phép nếu đã qua ngày cutoff
+    const currentDay = now.getDate();
     const nextMonth = currentMonth + 1 > 11 ? 0 : currentMonth + 1;
     const nextYear = currentMonth + 1 > 11 ? currentYear + 1 : currentYear;
     if (date.getMonth() === nextMonth && date.getFullYear() === nextYear) {
@@ -76,6 +78,11 @@ export function EmployeeRegistration() {
 
   // Kiểm tra xem tháng đang xem có phải là tháng có thể đăng ký không
   const canRegisterForMonth = (month: Date) => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
     const monthValue = month.getMonth();
     const yearValue = month.getFullYear();
 
@@ -190,14 +197,6 @@ export function EmployeeRegistration() {
     return month - 1 === selectedMonth.getMonth() && year === selectedMonth.getFullYear();
   });
   
-  // Debug: Log để kiểm tra
-  console.log('🔍 Debug vegetarian dates:', {
-    allVegetarianDates: Array.from(vegetarianDates),
-    vegetarianDatesInMonth,
-    selectedMonth: selectedMonth.getMonth() + 1,
-    selectedYear: selectedMonth.getFullYear()
-  });
-  
   const vegetarianCount = vegetarianDatesInMonth.length;
 
   const handleDateToggle = (date: Date) => {
@@ -219,8 +218,9 @@ export function EmployeeRegistration() {
 
     // Kiểm tra xem có thể chỉnh sửa ngày này không (theo logic mới)
     if (!canEditDate(date)) {
+      const now = new Date();
       const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       // Kiểm tra xem là ngày quá khứ hay ngày hôm nay
       if (dateStart <= todayStart) {
@@ -293,9 +293,19 @@ export function EmployeeRegistration() {
       const month = selectedMonth.getMonth() + 1;
       const year = selectedMonth.getFullYear();
 
-      // Chỉ gửi các ngày thuộc tháng đang xem
+      // Chỉ gửi các ngày thuộc tháng đang xem VÀ có thể chỉnh sửa (không phải quá khứ)
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      
       const datesInCurrentMonth = selectedDates.filter(d => {
-        return d.getMonth() + 1 === month && d.getFullYear() === year;
+        // Phải thuộc tháng đang xem
+        if (d.getMonth() + 1 !== month || d.getFullYear() !== year) {
+          return false;
+        }
+        
+        // Loại bỏ ngày quá khứ và ngày hôm nay
+        const dateStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        return dateStart.getTime() > todayStart.getTime();
       });
 
       // Format dates đúng cách để tránh lệch timezone
@@ -406,11 +416,12 @@ export function EmployeeRegistration() {
       </div>
 
       {(() => {
-        const currentHour = today.getHours();
-        const tomorrow = new Date(today);
+        const now = new Date();
+        const currentHour = now.getHours();
+        const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        const isTodayInSelectedMonth = today.getMonth() === selectedMonth.getMonth() && 
-                                       today.getFullYear() === selectedMonth.getFullYear();
+        const isTodayInSelectedMonth = now.getMonth() === selectedMonth.getMonth() && 
+                                       now.getFullYear() === selectedMonth.getFullYear();
         const isTomorrowInSelectedMonth = tomorrow.getMonth() === selectedMonth.getMonth() && 
                                           tomorrow.getFullYear() === selectedMonth.getFullYear();
         const isAfterDeadline = currentHour >= config.daily_deadline_hour;
@@ -424,7 +435,7 @@ export function EmployeeRegistration() {
                 <div>
                   <p className="font-medium mb-1">Không thể chỉnh sửa cho ngày hôm nay</p>
                   <p className="text-sm">
-                    Ngày <strong>{today.toLocaleDateString("vi-VN")}</strong> không thể chỉnh sửa vì đã qua thời gian deadline (trước <strong>{config.daily_deadline_hour}:00 hôm qua</strong>).
+                    Ngày <strong>{now.toLocaleDateString("vi-VN")}</strong> không thể chỉnh sửa vì đã qua thời gian deadline (trước <strong>{config.daily_deadline_hour}:00 hôm qua</strong>).
                     Bạn có thể chỉnh sửa từ ngày <strong>{tomorrow.toLocaleDateString("vi-VN")}</strong> trở đi{isAfterDeadline ? ' (từ ngày kia)' : ''}.
                   </p>
                 </div>
@@ -453,28 +464,35 @@ export function EmployeeRegistration() {
         return null;
       })()}
 
-      {!canRegisterForMonth(selectedMonth) && (selectedMonth.getFullYear() > currentYear || (selectedMonth.getFullYear() === currentYear && selectedMonth.getMonth() > currentMonth)) && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertDescription className="flex items-start gap-2">
-            <span>⏰</span>
-            <div>
-              <p className="font-medium mb-1">Chưa đến thời gian đăng ký cho tháng này</p>
-              <p className="text-sm">
-                Bạn đang xem tháng <strong>{selectedMonth.toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}</strong>.
-                {currentDay >= config.monthly_cutoff_day ? (
-                  <>
-                    {' '}Hiện tại bạn chỉ có thể đăng ký cho tháng <strong>{new Date(currentYear, currentMonth + 1, 1).toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}</strong>.
-                  </>
-                ) : (
-                  <>
-                    {' '}Thời gian đăng ký cho tháng tiếp theo sẽ mở từ ngày <strong>{config.monthly_cutoff_day} tháng {currentMonth + 1}</strong>.
-                  </>
-                )}
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+      {!canRegisterForMonth(selectedMonth) && (() => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const currentDay = now.getDate();
+        
+        return (selectedMonth.getFullYear() > currentYear || (selectedMonth.getFullYear() === currentYear && selectedMonth.getMonth() > currentMonth)) && (
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertDescription className="flex items-start gap-2">
+              <span>⏰</span>
+              <div>
+                <p className="font-medium mb-1">Chưa đến thời gian đăng ký cho tháng này</p>
+                <p className="text-sm">
+                  Bạn đang xem tháng <strong>{selectedMonth.toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}</strong>.
+                  {currentDay >= config.monthly_cutoff_day ? (
+                    <>
+                      {' '}Hiện tại bạn chỉ có thể đăng ký cho tháng <strong>{new Date(currentYear, currentMonth + 1, 1).toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}</strong>.
+                    </>
+                  ) : (
+                    <>
+                      {' '}Thời gian đăng ký cho tháng tiếp theo sẽ mở từ ngày <strong>{config.monthly_cutoff_day} tháng {currentMonth + 1}</strong>.
+                    </>
+                  )}
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        );
+      })()}
 
       {!hasSubmitted && !isEditing && isRegistrationOpen && (
         <Alert className="bg-blue-50 border-blue-200">

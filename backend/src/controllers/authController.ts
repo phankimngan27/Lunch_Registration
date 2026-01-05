@@ -81,9 +81,6 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    const loginTime = Date.now() - startTime;
-    console.log(`✅ Login successful for ${email} in ${loginTime}ms`);
-
     res.json({
       token,
       user: {

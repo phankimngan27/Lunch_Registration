@@ -8,6 +8,7 @@ import Statistics from './pages/Statistics';
 import UserManagement from './pages/UserManagement';
 import DailyRegistrations from './pages/DailyRegistrations';
 import RegistrationConfig from './pages/RegistrationConfig';
+import BulkRegistrationEdit from './pages/BulkRegistrationEdit';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import { useAuthStore } from './store/authStore';
@@ -29,6 +30,7 @@ function App() {
           <Route path="/daily-registrations" element={<DailyRegistrations />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/config" element={<RegistrationConfig />} />
+          <Route path="/bulk-registration-edit" element={<BulkRegistrationEdit />} />
         </Route>
       </Routes>
     </BrowserRouter>

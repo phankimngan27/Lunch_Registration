@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { login, getProfile } from '../controllers/authController';
 import { getAllUsers, createUser, updateUser, toggleUserStatus } from '../controllers/userController';
-import { createRegistration, getMyRegistrations, cancelRegistration, getRegistrationsByDate, createBulkRegistration, cancelBulkRegistration } from '../controllers/registrationController';
+import { createRegistration, getMyRegistrations, cancelRegistration, getRegistrationsByDate, createBulkRegistration, cancelBulkRegistration, bulkEditByUsers } from '../controllers/registrationController';
 import { getStatistics, exportExcel } from '../controllers/statisticsController';
 import { getDailyRegistrations, exportDailyExcel } from '../controllers/dailyRegistrationController';
 import { changePassword } from '../controllers/passwordController';
@@ -41,6 +41,7 @@ router.post('/registrations/cancel', authenticate, cancelRegistration);
 router.get('/registrations/by-date', authenticate, isAdmin, getRegistrationsByDate);
 router.post('/registrations/bulk-create', authenticate, isAdmin, createBulkRegistration);
 router.post('/registrations/bulk-cancel', authenticate, isAdmin, cancelBulkRegistration);
+router.post('/registrations/bulk-edit-by-users', authenticate, isAdmin, bulkEditByUsers);
 
 // Statistics routes (Admin only)
 router.get('/statistics', authenticate, isAdmin, getStatistics);

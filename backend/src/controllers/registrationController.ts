@@ -82,7 +82,10 @@ export const createRegistration = async (req: Request, res: Response) => {
 
       // Kiểm tra daily deadline cho từng ngày
       if (dates.length > 0) {
-        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const today = new Date();
+        const todayStart = new Date(today);
+        todayStart.setHours(0, 0, 0, 0);
+        
         const tomorrow = new Date(todayStart);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -93,10 +96,11 @@ export const createRegistration = async (req: Request, res: Response) => {
           }
 
           const registrationDate = dateValidation.date;
-          const regDateStart = new Date(registrationDate.getFullYear(), registrationDate.getMonth(), registrationDate.getDate());
+          const regDateStart = new Date(registrationDate);
+          regDateStart.setHours(0, 0, 0, 0);
 
           // Không cho phép đăng ký cho ngày quá khứ
-          if (regDateStart < todayStart) {
+          if (regDateStart.getTime() < todayStart.getTime()) {
             return res.status(403).json({ 
               message: `Không thể đăng ký cho ngày quá khứ: ${dateStr}` 
             });
@@ -109,12 +113,14 @@ export const createRegistration = async (req: Request, res: Response) => {
             });
           }
 
-          // Nếu là ngày mai, kiểm tra deadline
+          // Nếu là ngày mai, kiểm tra deadline (chỉ áp dụng cho ngày mai)
           if (regDateStart.getTime() === tomorrow.getTime() && currentHour >= dailyDeadlineHour) {
             return res.status(403).json({ 
               message: `Đã hết thời gian đăng ký cho ngày ${dateStr}. Deadline là ${dailyDeadlineHour}:00 hôm nay.` 
             });
           }
+
+          // Các ngày trong tương lai (sau ngày mai) luôn được phép đăng ký/chỉnh sửa
         }
       }
     }
@@ -183,32 +189,38 @@ export const createRegistration = async (req: Request, res: Response) => {
         const isInCurrentMonth = dateMonth === month && dateYear === year;
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-        if (isWeekend) {
-          console.log(`⚠️ Skipping weekend date: ${d} (${y}-${m}-${day}, day ${dayOfWeek})`);
-        }
-
-        if (!isInCurrentMonth) {
-          console.log(`⚠️ Skipping date not in current month: ${d}`);
-        }
-
         return isInCurrentMonth && !isWeekend;
       });
 
       // Tìm ngày cần thêm và ngày cần xóa (CHỈ trong tháng đang xem)
       const newDates = datesInCurrentMonth.filter(d => !existingRegs.includes(d));
-      const datesToDelete = existingRegs.filter(d => !datesInCurrentMonth.includes(d));
+      
+      // CHỈ xóa các ngày TƯƠNG LAI mà user bỏ chọn (không xóa ngày quá khứ)
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+      
+      const datesToDelete = existingRegs.filter(d => {
+        // Nếu ngày không có trong danh sách mới
+        if (datesInCurrentMonth.includes(d)) {
+          return false; // Không xóa
+        }
+        
+        // Parse date để kiểm tra xem có phải ngày quá khứ không
+        const [y, m, day] = d.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, day);
+        const dateStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0, 0);
+        
+        // CHỈ xóa nếu là ngày tương lai (sau hôm nay)
+        return dateStart.getTime() > todayStart.getTime();
+      });
 
-      console.log(`📊 Month ${month}/${year}: Existing: ${existingRegs.length}, New: ${datesInCurrentMonth.length}, To add: ${newDates.length}, To delete: ${datesToDelete.length}`);
-
-      // Xóa các ngày không còn được chọn
+      // Xóa các ngày không còn được chọn (chỉ ngày tương lai)
       if (datesToDelete.length > 0) {
-        console.log(`🗑️ Attempting to delete:`, datesToDelete);
         const deleteResult = await client.query(
           `DELETE FROM registrations 
            WHERE user_id = $1 AND TO_CHAR(registration_date, 'YYYY-MM-DD') = ANY($2::text[])`,
           [userId, datesToDelete]
         );
-        console.log(`✅ Deleted ${deleteResult.rowCount || 0} registrations`);
       }
 
       // Thêm các ngày mới (đã được lọc theo tháng đang xem)
@@ -295,7 +307,6 @@ export const cancelRegistration = async (req: Request, res: Response) => {
          WHERE user_id = $1 AND month = $2 AND year = $3`,
         [userId, parseInt(month), parseInt(year)]
       );
-      console.log('✅ Cancelled rows:', result.rowCount);
       return res.json({ message: 'Hủy đăng ký thành công', count: result.rowCount });
     }
 
@@ -347,7 +358,10 @@ export const getRegistrationsByDate = async (req: Request, res: Response) => {
 // Admin: Tạo đăng ký cho TẤT CẢ nhân viên active trong ngày
 export const createBulkRegistration = async (req: Request, res: Response) => {
   try {
-    const { date } = req.body;
+    const { date, isVegetarian = false } = req.body;
+    
+    // Convert to boolean to ensure correct type
+    const isVeg = Boolean(isVegetarian);
 
     if (!date) {
       return res.status(400).json({ message: 'Vui lòng chọn ngày' });
@@ -387,8 +401,8 @@ export const createBulkRegistration = async (req: Request, res: Response) => {
         if (existingReg.rows.length === 0) {
           await client.query(
             `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian) 
-             VALUES ($1, $2, $3, $4, false)`,
-            [user.id, date, month, year]
+             VALUES ($1, $2, $3, $4, $5)`,
+            [user.id, date, month, year, isVeg]
           );
           created++;
         } else {
@@ -434,6 +448,112 @@ export const cancelBulkRegistration = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Lỗi hủy đăng ký hàng loạt:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+// Admin: Chỉnh sửa đăng ký theo người (bulk edit by users)
+export const bulkEditByUsers = async (req: Request, res: Response) => {
+  try {
+    const { userIds, action, dates, month, year, isVegetarian = false } = req.body;
+    
+    // Convert to boolean to ensure correct type
+    const isVeg = Boolean(isVegetarian);
+
+    // Validate input
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'Vui lòng chọn ít nhất một nhân viên' });
+    }
+
+    if (!action || !['register', 'cancel'].includes(action)) {
+      return res.status(400).json({ message: 'Action không hợp lệ (register hoặc cancel)' });
+    }
+
+    // Validate dates or month/year
+    if (action === 'register' && (!dates || !Array.isArray(dates) || dates.length === 0)) {
+      return res.status(400).json({ message: 'Vui lòng chọn ít nhất một ngày' });
+    }
+
+    if (action === 'cancel' && !dates && (!month || !year)) {
+      return res.status(400).json({ message: 'Vui lòng chọn ngày hoặc tháng cần hủy' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      let totalCreated = 0;
+      let totalDeleted = 0;
+      let totalSkipped = 0;
+
+      if (action === 'register') {
+        // Đăng ký cho các người được chọn
+        for (const userId of userIds) {
+          for (const dateStr of dates) {
+            // Parse date để lấy month và year
+            const dateObj = new Date(dateStr);
+            const regMonth = dateObj.getMonth() + 1;
+            const regYear = dateObj.getFullYear();
+
+            // Check nếu đã có đăng ký
+            const existingReg = await client.query(
+              'SELECT id FROM registrations WHERE user_id = $1 AND registration_date = $2',
+              [userId, dateStr]
+            );
+
+            if (existingReg.rows.length === 0) {
+              await client.query(
+                `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian) 
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [userId, dateStr, regMonth, regYear, isVeg]
+              );
+              totalCreated++;
+            } else {
+              totalSkipped++;
+            }
+          }
+        }
+
+        await client.query('COMMIT');
+        res.json({ 
+          message: `Đã tạo ${totalCreated} đăng ký mới, bỏ qua ${totalSkipped} đăng ký đã tồn tại`,
+          created: totalCreated,
+          skipped: totalSkipped
+        });
+      } else if (action === 'cancel') {
+        // Hủy đăng ký cho các người được chọn
+        if (dates && dates.length > 0) {
+          // Hủy theo ngày cụ thể
+          const result = await client.query(
+            `DELETE FROM registrations 
+             WHERE user_id = ANY($1::int[]) AND registration_date = ANY($2::date[])`,
+            [userIds, dates]
+          );
+          totalDeleted = result.rowCount || 0;
+        } else if (month && year) {
+          // Hủy theo tháng
+          const result = await client.query(
+            `DELETE FROM registrations 
+             WHERE user_id = ANY($1::int[]) AND month = $2 AND year = $3`,
+            [userIds, parseInt(month), parseInt(year)]
+          );
+          totalDeleted = result.rowCount || 0;
+        }
+
+        await client.query('COMMIT');
+        res.json({ 
+          message: `Đã hủy ${totalDeleted} đăng ký`,
+          deleted: totalDeleted
+        });
+      }
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Lỗi chỉnh sửa đăng ký theo người:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };

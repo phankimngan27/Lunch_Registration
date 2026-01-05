@@ -69,6 +69,16 @@ const Layout = () => {
                     📋 Danh sách theo ngày
                   </Link>
                   <Link 
+                    to="/bulk-registration-edit" 
+                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                      isActive('/bulk-registration-edit') 
+                        ? 'bg-white/20 text-white' 
+                        : 'text-white hover:bg-white/10'
+                    }`}
+                  >
+                    ✏️ Chỉnh sửa đăng ký
+                  </Link>
+                  <Link 
                     to="/users" 
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                       isActive('/users') 
@@ -191,6 +201,17 @@ const Layout = () => {
                     }`}
                   >
                     📋 Danh sách theo ngày
+                  </Link>
+                  <Link 
+                    to="/bulk-registration-edit" 
+                    onClick={closeMobileMenu}
+                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                      isActive('/bulk-registration-edit') 
+                        ? 'bg-white/20 text-white' 
+                        : 'text-white hover:bg-white/10'
+                    }`}
+                  >
+                    ✏️ Chỉnh sửa đăng ký
                   </Link>
                   <Link 
                     to="/users" 

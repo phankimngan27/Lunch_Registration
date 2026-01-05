@@ -1,4 +1,4 @@
-import { isVegetarianDay } from './lunarCalendar';
+import { convertSolar2Lunar } from './lunarCalendar';
 
 // Validation utilities for input sanitization and validation
 
@@ -270,7 +270,11 @@ export const validateVegetarianDates = (
     }
 
     // CRITICAL: Check if date is actually a vegetarian day (lunar 1st or 15th)
-    const isActualVegetarianDay = isVegetarianDay(dateValidation.date);
+    // Parse date string and check directly with day/month/year to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const lunar = convertSolar2Lunar(day, month, year, 7);
+    const isActualVegetarianDay = lunar[0] === 1 || lunar[0] === 15;
+    
     if (!isActualVegetarianDay) {
       invalidDates.push(dateStr);
       continue; // Skip this date, don't add to validatedDates

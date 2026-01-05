@@ -44,7 +44,9 @@ export function getLunarDateCached(day: number, month: number, year: number): Lu
     // Limit cache size to prevent memory issues (keep last 1000 entries)
     if (lunarCache.size > 1000) {
       const firstKey = lunarCache.keys().next().value;
-      lunarCache.delete(firstKey);
+      if (firstKey) {
+        lunarCache.delete(firstKey);
+      }
     }
     
     return result;

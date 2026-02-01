@@ -21,7 +21,7 @@ const buildRegistrationQuery = (date: string, department?: string, meal_type?: s
   let paramCount = 2;
 
   if (department) {
-    query += ` AND u.department = $${paramCount}`;
+    query += ' AND u.department = $' + paramCount;
     params.push(department);
     paramCount++;
   }

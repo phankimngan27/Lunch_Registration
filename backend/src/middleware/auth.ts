@@ -23,7 +23,6 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const token = authHeader.split(' ')[1];
     
     if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET không được cấu hình');
       return res.status(500).json({ message: 'Lỗi cấu hình server' });
     }
 

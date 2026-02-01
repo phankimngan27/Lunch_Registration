@@ -15,23 +15,36 @@ export const createRegistration = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const { dates, month, year, vegetarianDates } = req.body;
 
+    // SECURITY: Validate input types to prevent type confusion attacks
     if (!dates || !Array.isArray(dates)) {
       return res.status(400).json({ message: 'Dữ liệu không hợp lệ' });
     }
 
-    // Validate month and year
+    // Validate month type and value
     if (month !== undefined) {
+      if (typeof month !== 'number') {
+        return res.status(400).json({ message: 'Tháng phải là số' });
+      }
       const monthValidation = validateMonth(month);
       if (!monthValidation.valid) {
         return res.status(400).json({ message: monthValidation.message });
       }
     }
 
+    // Validate year type and value
     if (year !== undefined) {
+      if (typeof year !== 'number') {
+        return res.status(400).json({ message: 'Năm phải là số' });
+      }
       const yearValidation = validateYear(year);
       if (!yearValidation.valid) {
         return res.status(400).json({ message: yearValidation.message });
       }
+    }
+
+    // Validate vegetarianDates type
+    if (vegetarianDates !== undefined && typeof vegetarianDates !== 'object') {
+      return res.status(400).json({ message: 'Dữ liệu ăn chay không hợp lệ' });
     }
 
     // Validate dates array (check format and weekends)
@@ -178,9 +191,11 @@ export const createRegistration = async (req: Request, res: Response) => {
 
       // Lấy tất cả registrations hiện tại của tháng đang xem
       // Dùng TO_CHAR để format date đúng cách, tránh lệch timezone
+      // FOR UPDATE: Lock rows để tránh race condition khi có nhiều request đồng thời
       const existingResult = await client.query(
         `SELECT TO_CHAR(registration_date, 'YYYY-MM-DD') as date_string FROM registrations 
-         WHERE user_id = $1 AND month = $2 AND year = $3`,
+         WHERE user_id = $1 AND month = $2 AND year = $3
+         FOR UPDATE`,
         [userId, month, year]
       );
       const existingRegs: string[] = existingResult.rows.map((r: any) => r.date_string);
@@ -274,7 +289,6 @@ export const createRegistration = async (req: Request, res: Response) => {
       client.release();
     }
   } catch (error) {
-    console.error('Lỗi đăng ký cơm:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -306,7 +320,6 @@ export const getMyRegistrations = async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error('Lỗi lấy đăng ký:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -316,17 +329,26 @@ export const cancelRegistration = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const { dates, month, year } = req.body;
 
+    // SECURITY: Validate input types
+    if (month !== undefined && typeof month !== 'number') {
+      return res.status(400).json({ message: 'Tháng phải là số' });
+    }
+
+    if (year !== undefined && typeof year !== 'number') {
+      return res.status(400).json({ message: 'Năm phải là số' });
+    }
+
     // Nếu có month/year, xóa tất cả registrations của tháng đó
     if (month && year) {
       const result = await pool.query(
         `DELETE FROM registrations 
          WHERE user_id = $1 AND month = $2 AND year = $3`,
-        [userId, parseInt(month), parseInt(year)]
+        [userId, month, year]
       );
       return res.json({ message: 'Hủy đăng ký thành công', count: result.rowCount });
     }
 
-    // Nếu chỉ có dates, xóa theo từng ngày
+    // Validate dates type
     if (!dates || !Array.isArray(dates) || dates.length === 0) {
       return res.status(400).json({ message: 'Vui lòng chọn ngày cần hủy' });
     }
@@ -339,7 +361,6 @@ export const cancelRegistration = async (req: Request, res: Response) => {
 
     res.json({ message: 'Hủy đăng ký thành công', count: result.rowCount });
   } catch (error) {
-    console.error('Lỗi hủy đăng ký:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -370,7 +391,6 @@ export const getRegistrationsByDate = async (req: Request, res: Response) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Lỗi lấy danh sách đăng ký:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -380,12 +400,13 @@ export const createBulkRegistration = async (req: Request, res: Response) => {
   try {
     const { date, isVegetarian = false } = req.body;
     
+    // SECURITY: Validate input types
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ message: 'Ngày không hợp lệ' });
+    }
+
     // Convert to boolean to ensure correct type
     const isVeg = Boolean(isVegetarian);
-
-    if (!date) {
-      return res.status(400).json({ message: 'Vui lòng chọn ngày' });
-    }
 
     // Parse date để lấy month và year
     const dateObj = new Date(date);
@@ -443,7 +464,6 @@ export const createBulkRegistration = async (req: Request, res: Response) => {
       client.release();
     }
   } catch (error) {
-    console.error('Lỗi tạo đăng ký hàng loạt:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -453,8 +473,9 @@ export const cancelBulkRegistration = async (req: Request, res: Response) => {
   try {
     const { date } = req.body;
 
-    if (!date) {
-      return res.status(400).json({ message: 'Vui lòng chọn ngày' });
+    // SECURITY: Validate input type
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ message: 'Ngày không hợp lệ' });
     }
 
     const result = await pool.query(
@@ -467,7 +488,6 @@ export const cancelBulkRegistration = async (req: Request, res: Response) => {
       count: result.rowCount
     });
   } catch (error) {
-    console.error('Lỗi hủy đăng ký hàng loạt:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -477,20 +497,39 @@ export const bulkEditByUsers = async (req: Request, res: Response) => {
   try {
     const { userIds, action, dates, month, year, isVegetarian = false } = req.body;
     
-    // Convert to boolean to ensure correct type
-    const isVeg = Boolean(isVegetarian);
-
-    // Validate input
+    // SECURITY: Validate input types
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return res.status(400).json({ message: 'Vui lòng chọn ít nhất một nhân viên' });
     }
 
-    if (!action || !['register', 'cancel'].includes(action)) {
+    // Validate all userIds are numbers
+    if (!userIds.every(id => typeof id === 'number' && Number.isInteger(id))) {
+      return res.status(400).json({ message: 'ID nhân viên không hợp lệ' });
+    }
+
+    if (!action || typeof action !== 'string' || !['register', 'cancel'].includes(action)) {
       return res.status(400).json({ message: 'Action không hợp lệ (register hoặc cancel)' });
     }
 
+    // Validate dates type
+    if (dates !== undefined && !Array.isArray(dates)) {
+      return res.status(400).json({ message: 'Danh sách ngày phải là mảng' });
+    }
+
+    // Validate month and year types
+    if (month !== undefined && typeof month !== 'number') {
+      return res.status(400).json({ message: 'Tháng phải là số' });
+    }
+
+    if (year !== undefined && typeof year !== 'number') {
+      return res.status(400).json({ message: 'Năm phải là số' });
+    }
+
+    // Convert to boolean to ensure correct type
+    const isVeg = Boolean(isVegetarian);
+
     // Validate dates or month/year
-    if (action === 'register' && (!dates || !Array.isArray(dates) || dates.length === 0)) {
+    if (action === 'register' && (!dates || dates.length === 0)) {
       return res.status(400).json({ message: 'Vui lòng chọn ít nhất một ngày' });
     }
 
@@ -507,31 +546,45 @@ export const bulkEditByUsers = async (req: Request, res: Response) => {
       let totalSkipped = 0;
 
       if (action === 'register') {
-        // Đăng ký cho các người được chọn
+        // FIX N+1 QUERY: Sử dụng bulk insert với ON CONFLICT thay vì loop
+        // Tạo danh sách các registrations cần insert
+        const registrationsToInsert: Array<{userId: number, dateStr: string, month: number, year: number}> = [];
+        
         for (const userId of userIds) {
           for (const dateStr of dates) {
             // Parse date để lấy month và year
             const dateObj = new Date(dateStr);
             const regMonth = dateObj.getMonth() + 1;
             const regYear = dateObj.getFullYear();
-
-            // Check nếu đã có đăng ký
-            const existingReg = await client.query(
-              'SELECT id FROM registrations WHERE user_id = $1 AND registration_date = $2',
-              [userId, dateStr]
-            );
-
-            if (existingReg.rows.length === 0) {
-              await client.query(
-                `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian) 
-                 VALUES ($1, $2, $3, $4, $5)`,
-                [userId, dateStr, regMonth, regYear, isVeg]
-              );
-              totalCreated++;
-            } else {
-              totalSkipped++;
-            }
+            
+            registrationsToInsert.push({
+              userId,
+              dateStr,
+              month: regMonth,
+              year: regYear
+            });
           }
+        }
+
+        // Bulk insert với ON CONFLICT DO NOTHING để tránh duplicate
+        // Sử dụng unnest để insert nhiều rows cùng lúc
+        if (registrationsToInsert.length > 0) {
+          const userIdArray = registrationsToInsert.map(r => r.userId);
+          const dateArray = registrationsToInsert.map(r => r.dateStr);
+          const monthArray = registrationsToInsert.map(r => r.month);
+          const yearArray = registrationsToInsert.map(r => r.year);
+          const vegArray = registrationsToInsert.map(() => isVeg);
+
+          const result = await client.query(
+            `INSERT INTO registrations (user_id, registration_date, month, year, is_vegetarian)
+             SELECT * FROM UNNEST($1::int[], $2::date[], $3::int[], $4::int[], $5::boolean[])
+             ON CONFLICT (user_id, registration_date) DO NOTHING
+             RETURNING id`,
+            [userIdArray, dateArray, monthArray, yearArray, vegArray]
+          );
+
+          totalCreated = result.rowCount || 0;
+          totalSkipped = registrationsToInsert.length - totalCreated;
         }
 
         await client.query('COMMIT');
@@ -555,7 +608,7 @@ export const bulkEditByUsers = async (req: Request, res: Response) => {
           const result = await client.query(
             `DELETE FROM registrations 
              WHERE user_id = ANY($1::int[]) AND month = $2 AND year = $3`,
-            [userIds, parseInt(month), parseInt(year)]
+            [userIds, month, year]
           );
           totalDeleted = result.rowCount || 0;
         }
@@ -573,7 +626,6 @@ export const bulkEditByUsers = async (req: Request, res: Response) => {
       client.release();
     }
   } catch (error) {
-    console.error('Lỗi chỉnh sửa đăng ký theo người:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };

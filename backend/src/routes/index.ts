@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, getProfile } from '../controllers/authController';
+import { login, getProfile, refreshToken, logout } from '../controllers/authController';
 import { getAllUsers, createUser, updateUser, toggleUserStatus } from '../controllers/userController';
 import { createRegistration, getMyRegistrations, cancelRegistration, getRegistrationsByDate, createBulkRegistration, cancelBulkRegistration, bulkEditByUsers } from '../controllers/registrationController';
 import { getStatistics, exportExcel } from '../controllers/statisticsController';
@@ -21,6 +21,8 @@ router.get('/health', (req, res) => {
 
 // Auth routes
 router.post('/auth/login', login);
+router.post('/auth/refresh', refreshToken);
+router.post('/auth/logout', authenticate, logout);
 router.get('/auth/profile', authenticate, getProfile);
 
 // Password routes

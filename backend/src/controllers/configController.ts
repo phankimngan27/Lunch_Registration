@@ -19,7 +19,6 @@ export const getConfig = async (req: Request, res: Response) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error getting config:', error);
     res.status(500).json({ message: 'Lỗi khi lấy cấu hình' });
   }
 };
@@ -69,7 +68,6 @@ export const updateConfig = async (req: Request, res: Response) => {
       config: result.rows[0]
     });
   } catch (error) {
-    console.error('Error updating config:', error);
     res.status(500).json({ message: 'Lỗi khi cập nhật cấu hình' });
   }
 };

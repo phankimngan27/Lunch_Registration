@@ -77,7 +77,6 @@ export const changePassword = async (req: Request, res: Response) => {
 
     res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (error) {
-    console.error('Lỗi đổi mật khẩu:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 };

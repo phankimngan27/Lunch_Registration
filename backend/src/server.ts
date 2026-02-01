@@ -33,7 +33,7 @@ app.use(cors({
 
 // Enable gzip compression for all responses
 app.use(compression({
-  filter: (req, res) => {
+  filter: (req: express.Request, res: express.Response) => {
     if (req.headers['x-no-compression']) {
       return false;
     }

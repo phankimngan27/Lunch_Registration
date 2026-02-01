@@ -258,8 +258,14 @@ export const validateVegetarianDates = (
 
   // Check each vegetarian date
   for (const dateStr in vegetarianDates) {
+    // SECURITY: Strict type validation - only accept boolean true
+    const value = vegetarianDates[dateStr];
+    if (typeof value !== 'boolean') {
+      return { valid: false, message: `Giá trị vegetarian phải là boolean cho ngày ${dateStr}` };
+    }
+    
     // Only process if value is true
-    if (vegetarianDates[dateStr] !== true) {
+    if (value !== true) {
       continue;
     }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -125,6 +125,7 @@ export function EmployeeRegistration() {
   // Load tất cả registrations và check hasSubmitted cho tháng hiện tại
   const fetchRegistrations = async () => {
     try {
+      // KHÔNG filter theo month/year - load TẤT CẢ để hiển thị đúng khi chuyển tháng
       const response = await api.get('/registrations/my');
 
       if (response.data && response.data.length > 0) {
@@ -134,7 +135,7 @@ export function EmployeeRegistration() {
         response.data.forEach((r: any) => {
           // Backend giờ trả về date string "YYYY-MM-DD" (không có timezone)
           // Parse đúng cách để tránh lệch timezone
-          const dateStr = r.registration_date; // "2025-11-04"
+          const dateStr = r.registration_date;
           const [y, m, d] = dateStr.split('-').map(Number);
           const date = new Date(y, m - 1, d); // month is 0-indexed
 
@@ -156,6 +157,8 @@ export function EmployeeRegistration() {
             vegDates.add(dateKey);
           }
         });
+        
+        // Cập nhật state một lần duy nhất để tránh multiple re-renders
         setSelectedDates(allDates);
         setVegetarianDates(vegDates);
 
@@ -172,7 +175,7 @@ export function EmployeeRegistration() {
         setHasSubmitted(false);
       }
     } catch (error) {
-      console.error('Lỗi tải đăng ký:', error);
+      // Silent fail - will retry on next mount
     }
   };
 
@@ -183,8 +186,7 @@ export function EmployeeRegistration() {
         const response = await api.get('/config');
         setConfig(response.data);
       } catch (error) {
-        console.error('Lỗi tải cấu hình:', error);
-        // Giữ giá trị mặc định nếu lỗi
+        // Silent fail - keep default config
       }
     };
     fetchConfig();
@@ -194,10 +196,13 @@ export function EmployeeRegistration() {
     fetchRegistrations();
   }, [selectedMonth]);
 
-  // Chỉ tính các ngày thuộc tháng đang xem
-  const datesInCurrentMonth = selectedDates.filter(d =>
-    d.getMonth() === selectedMonth.getMonth() && d.getFullYear() === selectedMonth.getFullYear()
-  );
+  // Sử dụng useMemo để đảm bảo datesInCurrentMonth được tính toán lại khi selectedDates hoặc selectedMonth thay đổi
+  const datesInCurrentMonth = useMemo(() => {
+    return selectedDates.filter(d =>
+      d.getMonth() === selectedMonth.getMonth() && d.getFullYear() === selectedMonth.getFullYear()
+    );
+  }, [selectedDates, selectedMonth]);
+  
   const totalDays = datesInCurrentMonth.length;
   const totalAmount = totalDays * PRICE_PER_DAY;
 
@@ -298,6 +303,11 @@ export function EmployeeRegistration() {
 
   const handleSubmit = async () => {
     setLoading(true);
+    
+    // BACKUP: Save current state for rollback on error
+    const backupSelectedDates = [...selectedDates];
+    const backupVegetarianDates = new Set(vegetarianDates);
+    
     try {
       const month = selectedMonth.getMonth() + 1;
       const year = selectedMonth.getFullYear();
@@ -339,19 +349,25 @@ export function EmployeeRegistration() {
         vegetarianDates: vegetarianInfo
       });
 
+      // KHÔNG fetch lại từ server, thay vào đó update state trực tiếp
+      // Điều này đảm bảo UI cập nhật ngay lập tức
+      // selectedDates đã chứa đúng data (bao gồm cả ngày quá khứ và ngày mới)
+      // Không cần thay đổi gì cả!
+
+      // Thoát edit mode
+      setIsEditing(false);
+
+      // Hiển thị toast message
       if (dates.length === 0) {
-        setHasSubmitted(false);
         toast.success('Đã hủy tất cả đăng ký cơm trưa của tháng này!');
       } else {
-        setHasSubmitted(true);
         toast.success('Đăng ký cơm trưa thành công!');
       }
-
-      setIsEditing(false);
-      // Refresh data sau khi lưu
-      await fetchRegistrations();
     } catch (error: any) {
-      console.error('❌ Submit error:', error);
+      // ROLLBACK: Restore previous state on error
+      setSelectedDates(backupSelectedDates);
+      setVegetarianDates(backupVegetarianDates);
+      
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
     } finally {
       setLoading(false);
@@ -359,13 +375,8 @@ export function EmployeeRegistration() {
   };
 
   const handleEdit = () => {
-    // Khi vào chế độ edit, chỉ giữ lại các ngày thuộc tháng đang xem
-    const month = selectedMonth.getMonth();
-    const year = selectedMonth.getFullYear();
-    const datesInCurrentMonth = selectedDates.filter(d =>
-      d.getMonth() === month && d.getFullYear() === year
-    );
-    setSelectedDates(datesInCurrentMonth);
+    // Không filter selectedDates nữa, để nguyên tất cả các ngày
+    // UI sẽ tự động filter khi hiển thị thông qua datesInCurrentMonth
     setIsEditing(true);
   };
 
@@ -378,26 +389,65 @@ export function EmployeeRegistration() {
     if (!isEditing) return;
 
     const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
-    const allDates: Date[] = [];
-
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    
+    // Giữ lại các ngày quá khứ và ngày hôm nay (không thể chỉnh sửa)
+    const pastDates = selectedDates.filter(date => {
+      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+      return dateStart.getTime() <= todayStart.getTime();
+    });
+    
+    const futureDates: Date[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day);
       const dayOfWeek = date.getDay();
       // Chỉ chọn các ngày không phải cuối tuần và có thể chỉnh sửa
       if (dayOfWeek !== 0 && dayOfWeek !== 6 && canEditDate(date)) {
-        allDates.push(date);
+        futureDates.push(date);
       }
     }
 
-    setSelectedDates(allDates);
-    toast.success(`Đã chọn ${allDates.length} ngày trong tháng`);
+    // Kết hợp ngày quá khứ + ngày tương lai mới chọn
+    setSelectedDates([...pastDates, ...futureDates]);
+    toast.success(`Đã chọn ${futureDates.length} ngày tương lai trong tháng`);
   };
 
   const handleDeselectAll = () => {
     if (!isEditing) return;
-    setSelectedDates([]);
-    setVegetarianDates(new Set());
-    toast.info('Đã bỏ chọn tất cả');
+    
+    // Chỉ bỏ chọn các ngày tương lai (có thể chỉnh sửa)
+    // Giữ lại các ngày quá khứ và ngày hôm nay
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    
+    const pastDates = selectedDates.filter(date => {
+      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+      // Giữ lại ngày quá khứ và ngày hôm nay (không thể chỉnh sửa)
+      return dateStart.getTime() <= todayStart.getTime();
+    });
+    
+    // Cập nhật vegetarianDates: chỉ giữ lại các ngày quá khứ
+    const newVegDates = new Set<string>();
+    pastDates.forEach(date => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+      if (vegetarianDates.has(dateKey)) {
+        newVegDates.add(dateKey);
+      }
+    });
+    
+    setSelectedDates(pastDates);
+    setVegetarianDates(newVegDates);
+    
+    const removedCount = selectedDates.length - pastDates.length;
+    if (removedCount > 0) {
+      toast.info(`Đã bỏ chọn ${removedCount} ngày tương lai`);
+    } else {
+      toast.info('Không có ngày tương lai nào để bỏ chọn');
+    }
   };
 
   const handleMonthChange = (newMonth: Date) => {

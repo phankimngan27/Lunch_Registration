@@ -8,7 +8,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [showReminderBanner, setShowReminderBanner] = useState(false);
-  const [hasRegistrations, setHasRegistrations] = useState(false);
   const [targetMonth, setTargetMonth] = useState(new Date().getMonth() + 1);
 
   const isSuperAdmin = user?.employee_code === 'admin' || user?.email === 'admin@madison.dev';
@@ -60,9 +59,6 @@ const Dashboard = () => {
         if (!registrations || registrations.length === 0) {
           setShowReminderBanner(true);
           setTargetMonth(targetMonth);
-          setHasRegistrations(false);
-        } else {
-          setHasRegistrations(true);
         }
       } catch (error) {
         // Không hiển thị banner nếu có lỗi

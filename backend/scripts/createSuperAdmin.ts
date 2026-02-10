@@ -8,8 +8,8 @@ async function createSuperAdmin() {
     const password = 'admin1234';
     const fullName = 'Super Admin';
 
-    // Hash password (8 rounds for faster login on production)
-    const passwordHash = await bcrypt.hash(password, 8);
+    // Hash password (10 rounds for security consistency)
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Check if admin already exists
     const existingAdmin = await pool.query(

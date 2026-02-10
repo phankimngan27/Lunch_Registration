@@ -40,7 +40,7 @@ const DailyRegistrations = () => {
       const uniqueDepts = [...new Set(response.data.map((u: any) => u.department).filter(Boolean))];
       setDepartments(uniqueDepts as string[]);
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      // Silent fail - departments filter is optional
     }
   };
 
@@ -57,7 +57,6 @@ const DailyRegistrations = () => {
       setSummary(response.data.summary);
     } catch (error) {
       toast.error('Lỗi tải danh sách đăng ký');
-      console.error(error);
     } finally {
       setLoading(false);
     }

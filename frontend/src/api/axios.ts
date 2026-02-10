@@ -6,7 +6,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Reduced from 30s to 10s for faster failure detection
+  timeout: 10000,
 });
 
 api.interceptors.request.use((config) => {
@@ -20,14 +20,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle network errors
+    if (!error.response) {
+      return Promise.reject({
+        message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+        code: 'NETWORK_ERROR'
+      });
+    }
+
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Only logout and redirect if not already on login page
       const currentPath = window.location.pathname;
       if (currentPath !== '/login') {
         useAuthStore.getState().logout();
         window.location.href = '/login';
       }
     }
+    
     return Promise.reject(error);
   }
 );

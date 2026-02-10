@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import ExcelJS from 'exceljs';
 import pool from '../config/database';
+import { logger } from '../utils/logger';
 
 export const getStatistics = async (req: Request, res: Response) => {
   try {
@@ -58,7 +59,7 @@ export const getStatistics = async (req: Request, res: Response) => {
 
     res.json({ summary, details: result.rows });
   } catch (error) {
-    console.error('Lỗi thống kê:', error);
+    logger.error('Statistics error', { error });
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -361,7 +362,7 @@ export const exportExcel = async (req: Request, res: Response) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('Lỗi xuất Excel:', error);
+    logger.error('Excel export error', { error });
     if (!res.headersSent) {
       res.status(500).json({ message: 'Lỗi server' });
     }

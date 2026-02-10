@@ -1,14 +1,72 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from '../api/axios';
 
 const Layout = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showRegistrationBadge, setShowRegistrationBadge] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Kiểm tra xem user đã đăng ký tháng sau chưa (cho badge)
+  useEffect(() => {
+    if (!user || user.role === 'admin' || user.employee_code === 'admin' || user.email === 'admin@madison.dev') {
+      return;
+    }
+
+    const checkMonthlyRegistration = async () => {
+      try {
+        // Lấy cấu hình registration
+        const configResponse = await axios.get('/api/config');
+        const monthlyCutoffDay = configResponse.data.monthly_cutoff_day || 25;
+
+        const today = new Date();
+        const dayOfMonth = today.getDate();
+        
+        // Chỉ hiển thị badge trong khoảng thời gian được phép đăng ký
+        if (dayOfMonth < monthlyCutoffDay) {
+          setShowRegistrationBadge(false);
+          return;
+        }
+
+        // Tính tháng cần kiểm tra (tháng sau)
+        const currentMonth = today.getMonth(); // 0-11
+        const currentYear = today.getFullYear();
+        
+        let targetMonth = currentMonth + 2; // +1 để chuyển sang 1-12, +1 để lấy tháng sau
+        let targetYear = currentYear;
+        
+        if (targetMonth > 12) {
+          targetMonth = 1;
+          targetYear++;
+        }
+        
+        const response = await axios.get('/api/registrations/my-registrations', {
+          params: {
+            month: targetMonth,
+            year: targetYear
+          }
+        });
+
+        const registrations = response.data;
+        
+        if (!registrations || registrations.length === 0) {
+          setShowRegistrationBadge(true);
+        } else {
+          setShowRegistrationBadge(false);
+        }
+      } catch (error) {
+        // Không hiển thị badge nếu có lỗi
+        setShowRegistrationBadge(false);
+      }
+    };
+
+    checkMonthlyRegistration();
+  }, [user, location.pathname]); // Re-check khi chuyển trang
 
   const handleLogout = () => {
     logout();
@@ -37,13 +95,19 @@ const Layout = () => {
               {user?.employee_code !== 'admin' && user?.email !== 'admin@madison.dev' && (
                 <Link 
                   to="/registration" 
-                  className={`flex items-center px-3 py-2 rounded-lg font-medium transition-colors ${
+                  className={`flex items-center px-3 py-2 rounded-lg font-medium transition-colors relative ${
                     isActive('/registration') 
                       ? 'bg-white/20 text-white' 
                       : 'text-white hover:bg-white/10'
                   }`}
                 >
                   🍱 Đăng ký cơm
+                  {showRegistrationBadge && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 border-2 border-white"></span>
+                    </span>
+                  )}
                 </Link>
               )}
               {user?.role === 'admin' && (
@@ -168,13 +232,19 @@ const Layout = () => {
                 <Link 
                   to="/registration" 
                   onClick={closeMobileMenu}
-                  className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors relative ${
                     isActive('/registration') 
                       ? 'bg-white/20 text-white' 
                       : 'text-white hover:bg-white/10'
                   }`}
                 >
                   🍱 Đăng ký cơm
+                  {showRegistrationBadge && (
+                    <span className="ml-2 flex h-5 w-5">
+                      <span className="animate-ping absolute inline-flex h-5 w-5 rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 border-2 border-white"></span>
+                    </span>
+                  )}
                 </Link>
               )}
               

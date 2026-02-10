@@ -417,19 +417,15 @@ export function EmployeeRegistration() {
     if (!isEditing) return;
     
     // Chỉ bỏ chọn các ngày tương lai (có thể chỉnh sửa)
-    // Giữ lại các ngày quá khứ và ngày hôm nay
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    
-    const pastDates = selectedDates.filter(date => {
-      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-      // Giữ lại ngày quá khứ và ngày hôm nay (không thể chỉnh sửa)
-      return dateStart.getTime() <= todayStart.getTime();
+    // Giữ lại các ngày KHÔNG thể chỉnh sửa (theo logic canEditDate)
+    const pastAndTodayDates = selectedDates.filter(date => {
+      // Giữ lại các ngày KHÔNG thể chỉnh sửa
+      return !canEditDate(date);
     });
     
-    // Cập nhật vegetarianDates: chỉ giữ lại các ngày quá khứ
+    // Cập nhật vegetarianDates: chỉ giữ lại các ngày không thể chỉnh sửa
     const newVegDates = new Set<string>();
-    pastDates.forEach(date => {
+    pastAndTodayDates.forEach(date => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -439,10 +435,10 @@ export function EmployeeRegistration() {
       }
     });
     
-    setSelectedDates(pastDates);
+    setSelectedDates(pastAndTodayDates);
     setVegetarianDates(newVegDates);
     
-    const removedCount = selectedDates.length - pastDates.length;
+    const removedCount = selectedDates.length - pastAndTodayDates.length;
     if (removedCount > 0) {
       toast.info(`Đã bỏ chọn ${removedCount} ngày tương lai`);
     } else {

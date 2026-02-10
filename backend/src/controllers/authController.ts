@@ -2,10 +2,13 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import pool from '../config/database';
+import { logger } from '../utils/logger';
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+
+    logger.info('Login attempt', { email });
 
     // Validate required fields
     if (!email || !password) {
@@ -65,6 +68,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Compare password with hash in database
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    
     if (!isPasswordValid) {
       return res.status(401).json({ 
         message: 'Mật khẩu không đúng. Vui lòng thử lại hoặc liên hệ quản trị viên để đặt lại mật khẩu.',
@@ -72,7 +76,13 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'default_secret';
+    // SECURITY: Ensure JWT_SECRET is configured in production
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET not configured');
+      return res.status(500).json({ message: 'Lỗi cấu hình server' });
+    }
+    
+    const jwtSecret = process.env.JWT_SECRET;
     
     // Generate access token (short-lived: 15 minutes)
     const accessToken = jwt.sign(
@@ -96,8 +106,9 @@ export const login = async (req: Request, res: Response) => {
       [refreshToken, user.id]
     );
 
+    logger.info('Login successful', { email, userId: user.id });
     res.json({
-      accessToken,
+      token: accessToken,  // Changed from accessToken to token for frontend compatibility
       refreshToken,
       user: {
         id: user.id,
@@ -110,6 +121,7 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
+    logger.error('Login error', { error });
     res.status(500).json({ message: 'Lỗi server' });
   }
 };
@@ -145,7 +157,13 @@ export const refreshToken = async (req: Request, res: Response) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'default_secret';
+    // SECURITY: Ensure JWT_SECRET is configured
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET not configured');
+      return res.status(500).json({ message: 'Lỗi cấu hình server' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
 
     // Verify refresh token
     let decoded: any;

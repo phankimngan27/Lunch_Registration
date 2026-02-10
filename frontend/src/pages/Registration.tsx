@@ -22,7 +22,7 @@ const Registration = () => {
   try {
     return <EmployeeRegistration />;
   } catch (error) {
-    console.error('Error rendering EmployeeRegistration:', error);
+    // Error rendering component - show fallback UI
     return (
       <div className="p-6">
         <h1 className="text-3xl font-bold mb-4">Đăng ký Cơm Trưa</h1>

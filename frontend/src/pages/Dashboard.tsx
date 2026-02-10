@@ -1,14 +1,109 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useMonthlyRegistrationReminder } from '../hooks/useMonthlyRegistrationReminder';
+import axios from '../api/axios';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [showReminderBanner, setShowReminderBanner] = useState(false);
+  const [hasRegistrations, setHasRegistrations] = useState(false);
+  const [targetMonth, setTargetMonth] = useState(new Date().getMonth() + 1);
 
   const isSuperAdmin = user?.employee_code === 'admin' || user?.email === 'admin@madison.dev';
 
+  // Sử dụng hook notification
+  useMonthlyRegistrationReminder();
+
+  // Kiểm tra xem user đã đăng ký tháng sau chưa (cho banner)
+  useEffect(() => {
+    if (!user || user.role === 'admin' || isSuperAdmin) {
+      return;
+    }
+
+    const checkMonthlyRegistration = async () => {
+      try {
+        // Lấy cấu hình registration
+        const configResponse = await axios.get('/api/config');
+        const monthlyCutoffDay = configResponse.data.monthly_cutoff_day || 25;
+
+        const today = new Date();
+        const dayOfMonth = today.getDate();
+        
+        // Chỉ hiển thị banner trong khoảng thời gian được phép đăng ký
+        if (dayOfMonth < monthlyCutoffDay) {
+          return; // Chưa đến thời gian đăng ký
+        }
+
+        // Tính tháng cần kiểm tra (tháng sau)
+        const currentMonth = today.getMonth(); // 0-11
+        const currentYear = today.getFullYear();
+        
+        let targetMonth = currentMonth + 2; // +1 để chuyển sang 1-12, +1 để lấy tháng sau
+        let targetYear = currentYear;
+        
+        if (targetMonth > 12) {
+          targetMonth = 1;
+          targetYear++;
+        }
+        
+        const response = await axios.get('/api/registrations/my-registrations', {
+          params: {
+            month: targetMonth,
+            year: targetYear
+          }
+        });
+
+        const registrations = response.data;
+        
+        if (!registrations || registrations.length === 0) {
+          setShowReminderBanner(true);
+          setTargetMonth(targetMonth);
+          setHasRegistrations(false);
+        } else {
+          setHasRegistrations(true);
+        }
+      } catch (error) {
+        // Không hiển thị banner nếu có lỗi
+      }
+    };
+
+    checkMonthlyRegistration();
+  }, [user, isSuperAdmin]);
+
   return (
     <div className="space-y-6">
+      {/* Banner nhắc nhở đăng ký cơm đầu tháng */}
+      {showReminderBanner && !isSuperAdmin && (
+        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl p-4 sm:p-6 text-white shadow-2xl border-2 border-orange-300 animate-pulse">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-3xl">🍚</span>
+                <h2 className="text-xl sm:text-2xl font-bold">Nhắc nhở đăng ký cơm!</h2>
+              </div>
+              <p className="text-white/90 mb-4 text-sm sm:text-base">
+                Bạn chưa đăng ký cơm tháng {targetMonth}. Đăng ký ngay để không bỏ lỡ bữa trưa nhé! 😊
+              </p>
+              <button 
+                onClick={() => navigate('/registration')}
+                className="bg-white text-orange-600 hover:bg-orange-50 font-bold py-2 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                Đăng ký ngay →
+              </button>
+            </div>
+            <button 
+              onClick={() => setShowReminderBanner(false)}
+              className="text-white/80 hover:text-white text-2xl font-bold leading-none"
+              title="Đóng"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner với thông tin cá nhân */}
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-lg">
         <div className="flex items-start justify-between">

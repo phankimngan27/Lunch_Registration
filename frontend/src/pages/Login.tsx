@@ -22,7 +22,17 @@ const Login = () => {
             toast.success('Đăng nhập thành công!');
             navigate('/dashboard');
         } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+            // Handle login error
+            let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
+            
+            if (error.code === 'NETWORK_ERROR') {
+                errorMessage = error.message;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
             toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 5000,

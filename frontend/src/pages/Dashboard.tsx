@@ -134,7 +134,7 @@ const Dashboard = () => {
 
       {/* Grid chung cho tất cả cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Card Đăng ký cơm - hiển thị cho tất cả trừ Super Admin */}
+        {/* Card Đăng ký cơm - chỉ hiển thị cho user thường và admin (không phải Super Admin) */}
         {!isSuperAdmin && (
           <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-4 sm:p-6 rounded-xl shadow-lg border border-orange-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer" onClick={() => navigate('/registration')}>
             <div className="flex items-center mb-4">
@@ -179,16 +179,31 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 p-6 rounded-xl shadow-lg border border-pink-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer" onClick={() => navigate('/users')}>
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-400 rounded-xl flex items-center justify-center mr-3 shadow-md">
-                  <span className="text-2xl">👥</span>
+            {isSuperAdmin && (
+              <div className="bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100 p-6 rounded-xl shadow-lg border border-pink-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer" onClick={() => navigate('/users')}>
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-400 rounded-xl flex items-center justify-center mr-3 shadow-md">
+                    <span className="text-2xl">👥</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-pink-900">Quản lý nhân viên</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-pink-900">Quản lý nhân viên</h3>
+                <p className="text-sm text-pink-700 mb-4">Thêm, sửa, xóa thông tin nhân viên</p>
+                <button className="w-full bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                  Quản lý →
+                </button>
               </div>
-              <p className="text-sm text-pink-700 mb-4">Thêm, sửa, xóa thông tin nhân viên</p>
-              <button className="w-full bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
-                Quản lý →
+            )}
+
+            <div className="bg-gradient-to-br from-purple-50 via-violet-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-lg border border-purple-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer" onClick={() => navigate('/bulk-registration-edit')}>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center mr-3 shadow-md">
+                  <span className="text-2xl">✏️</span>
+                </div>
+                <h3 className="text-lg font-semibold text-purple-900">Chỉnh sửa đăng ký</h3>
+              </div>
+              <p className="text-sm text-purple-700 mb-4">Chỉnh sửa đăng ký hàng loạt theo tháng</p>
+              <button className="w-full bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                Chỉnh sửa →
               </button>
             </div>
 

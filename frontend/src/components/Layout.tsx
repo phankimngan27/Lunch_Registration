@@ -95,9 +95,9 @@ const Layout = () => {
               {user?.employee_code !== 'admin' && user?.email !== 'admin@madison.dev' && (
                 <Link 
                   to="/registration" 
-                  className={`flex items-center px-3 py-2 rounded-lg font-medium transition-colors relative ${
+                  className={`flex items-center px-3 py-2 rounded-lg transition-colors relative ${
                     isActive('/registration') 
-                      ? 'bg-white/20 text-white' 
+                      ? 'bg-white/20 text-white font-semibold' 
                       : 'text-white hover:bg-white/10'
                   }`}
                 >
@@ -116,7 +116,7 @@ const Layout = () => {
                     to="/statistics" 
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                       isActive('/statistics') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
@@ -126,7 +126,7 @@ const Layout = () => {
                     to="/daily-registrations" 
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                       isActive('/daily-registrations') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
@@ -136,29 +136,32 @@ const Layout = () => {
                     to="/bulk-registration-edit" 
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                       isActive('/bulk-registration-edit') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
                     ✏️ Chỉnh sửa đăng ký
                   </Link>
-                  <Link 
-                    to="/users" 
-                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
-                      isActive('/users') 
-                        ? 'bg-white/20 text-white' 
-                        : 'text-white hover:bg-white/10'
-                    }`}
-                  >
-                    👥 Quản lý nhân viên
-                  </Link>
+                  {/* Chỉ super admin mới thấy menu quản lý nhân viên */}
+                  {(user?.employee_code === 'admin' || user?.email === 'admin@madison.dev') && (
+                    <Link 
+                      to="/users" 
+                      className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                        isActive('/users') 
+                          ? 'bg-white/20 text-white font-semibold' 
+                          : 'text-white hover:bg-white/10'
+                      }`}
+                    >
+                      👥 Quản lý nhân viên
+                    </Link>
+                  )}
                   {/* Chỉ super admin mới thấy menu config */}
                   {(user?.employee_code === 'admin' || user?.email === 'admin@madison.dev') && (
                     <Link 
                       to="/config" 
                       className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                         isActive('/config') 
-                          ? 'bg-white/20 text-white' 
+                          ? 'bg-white/20 text-white font-semibold' 
                           : 'text-white hover:bg-white/10'
                       }`}
                     >
@@ -184,7 +187,7 @@ const Layout = () => {
               </Link>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors"
+                className="px-3 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors text-sm"
               >
                 Đăng xuất
               </button>
@@ -232,9 +235,9 @@ const Layout = () => {
                 <Link 
                   to="/registration" 
                   onClick={closeMobileMenu}
-                  className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors relative ${
+                  className={`flex items-center px-4 py-3 rounded-lg transition-colors relative ${
                     isActive('/registration') 
-                      ? 'bg-white/20 text-white' 
+                      ? 'bg-white/20 text-white font-semibold' 
                       : 'text-white hover:bg-white/10'
                   }`}
                 >
@@ -255,7 +258,7 @@ const Layout = () => {
                     onClick={closeMobileMenu}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                       isActive('/statistics') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
@@ -266,7 +269,7 @@ const Layout = () => {
                     onClick={closeMobileMenu}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                       isActive('/daily-registrations') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
@@ -277,30 +280,33 @@ const Layout = () => {
                     onClick={closeMobileMenu}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                       isActive('/bulk-registration-edit') 
-                        ? 'bg-white/20 text-white' 
+                        ? 'bg-white/20 text-white font-semibold' 
                         : 'text-white hover:bg-white/10'
                     }`}
                   >
                     ✏️ Chỉnh sửa đăng ký
                   </Link>
-                  <Link 
-                    to="/users" 
-                    onClick={closeMobileMenu}
-                    className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                      isActive('/users') 
-                        ? 'bg-white/20 text-white' 
-                        : 'text-white hover:bg-white/10'
-                    }`}
-                  >
-                    👥 Quản lý nhân viên
-                  </Link>
+                  {/* Chỉ super admin mới thấy menu quản lý nhân viên */}
+                  {(user?.employee_code === 'admin' || user?.email === 'admin@madison.dev') && (
+                    <Link 
+                      to="/users" 
+                      onClick={closeMobileMenu}
+                      className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                        isActive('/users') 
+                          ? 'bg-white/20 text-white font-semibold' 
+                          : 'text-white hover:bg-white/10'
+                      }`}
+                    >
+                      👥 Quản lý nhân viên
+                    </Link>
+                  )}
                   {(user?.employee_code === 'admin' || user?.email === 'admin@madison.dev') && (
                     <Link 
                       to="/config" 
                       onClick={closeMobileMenu}
                       className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                         isActive('/config') 
-                          ? 'bg-white/20 text-white' 
+                          ? 'bg-white/20 text-white font-semibold' 
                           : 'text-white hover:bg-white/10'
                       }`}
                     >

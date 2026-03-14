@@ -558,8 +558,8 @@ const ByUsersTab = ({ setConfirmDialog }: any) => {
         payload.isVegetarian = isVegetarian;
       } else {
         if (editMode === 'month') {
-          payload.month = selectedMonth;
-          payload.year = selectedYear;
+          payload.month = parseInt(selectedMonth);
+          payload.year = parseInt(selectedYear);
         } else {
           payload.dates = selectedDates;
         }

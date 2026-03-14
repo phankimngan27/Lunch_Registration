@@ -138,10 +138,10 @@ export const validateEmployeeCode = (code: string): { valid: boolean; message?: 
     return { valid: false, message: 'Mã nhân viên quá dài (tối đa 50 ký tự)' };
   }
 
-  // Only allow alphanumeric, dash, underscore
-  const codeRegex = /^[a-zA-Z0-9_-]+$/;
+  // Allow alphanumeric, dash, underscore, and dot
+  const codeRegex = /^[a-zA-Z0-9._-]+$/;
   if (!codeRegex.test(code)) {
-    return { valid: false, message: 'Mã nhân viên chỉ được chứa chữ, số, gạch ngang và gạch dưới' };
+    return { valid: false, message: 'Mã nhân viên chỉ được chứa chữ, số, gạch ngang, gạch dưới và dấu chấm' };
   }
 
   return { valid: true };

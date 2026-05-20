@@ -31,9 +31,9 @@ Web application for employees to register for daily lunch meals with admin overs
 - **Admin**: Full system access including user management and reporting
 
 ## Default Credentials
-- **Production Admin**: `ngan.phan.thi.kim@madison.dev` / `12345`
-- **Development Super Admin**: `admin@madison.dev` / `admin1234`
-- **Development Sample User**: `ngan.phan.thi.kim@madison.dev` / `1234`
+- **Production Admin**: 
+- **Development Super Admin**: 
+- **Development Sample User**: 
 
 ## Language
 Primary language is Vietnamese for UI and documentation.

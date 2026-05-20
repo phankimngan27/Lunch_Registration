@@ -94,12 +94,11 @@ stop-website.bat
 ## 🔐 Tài khoản mặc định
 
 **Super Admin:**
-- Email: `admin@madison.dev`
-- Password: `admin1234`
-
+- Email:
+- Password: 
 **User mẫu:**
-- Email: `ngan.phan.thi.kim@madison.dev`
-- Password: `1234`
+- Email: 
+- Password: 
 
 ⚠️ Đổi password sau lần đăng nhập đầu tiên!
 

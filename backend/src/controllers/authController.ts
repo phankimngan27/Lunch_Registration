@@ -84,11 +84,11 @@ export const login = async (req: Request, res: Response) => {
     
     const jwtSecret = process.env.JWT_SECRET;
     
-    // Generate access token (short-lived: 15 minutes)
+    // Generate access token (1 day)
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       jwtSecret,
-      { expiresIn: '15m' }
+      { expiresIn: '1d' }
     );
 
     // Generate refresh token (long-lived: 7 days)
@@ -231,11 +231,11 @@ export const refreshToken = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate new access token
+    // Generate new access token (1 day)
     const newAccessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       jwtSecret,
-      { expiresIn: '15m' }
+      { expiresIn: '1d' }
     );
 
     res.json({

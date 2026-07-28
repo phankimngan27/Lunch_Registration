@@ -155,11 +155,11 @@ cd frontend && npm run build
 
 ## 📚 Tài liệu thêm
 
-- [QUICKSTART.md](QUICKSTART.md) - Hướng dẫn setup nhanh 5 phút
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy production
+- [START_HERE.md](START_HERE.md) - Hướng dẫn setup nhanh 5 phút
+- [PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy production
+- [BACKUP_GUIDE.md](BACKUP_GUIDE.md) - Hướng dẫn backup & recovery đầy đủ
 - [TECH_STACK.md](TECH_STACK.md) - Chi tiết công nghệ
-- [BEST_PRACTICES.md](BEST_PRACTICES.md) - Best practices và coding standards
-- [SECURITY_GUIDE.md](SECURITY_GUIDE.md) - Hướng dẫn bảo mật
+- [SECURITY_README.md](SECURITY_README.md) - Hướng dẫn bảo mật
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Hướng dẫn đóng góp code
 
 ## 📄 License

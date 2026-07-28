@@ -312,19 +312,11 @@ export function EmployeeRegistration() {
       const month = selectedMonth.getMonth() + 1;
       const year = selectedMonth.getFullYear();
 
-      // Chỉ gửi các ngày thuộc tháng đang xem VÀ có thể chỉnh sửa (không phải quá khứ)
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      
+      // GỬI TẤT CẢ các ngày đã chọn thuộc tháng đang xem (bao gồm cả quá khứ, hôm nay, tương lai)
+      // Backend sẽ tự xử lý logic: chỉ thêm/xóa ngày tương lai, giữ nguyên ngày quá khứ
       const datesInCurrentMonth = selectedDates.filter(d => {
-        // Phải thuộc tháng đang xem
-        if (d.getMonth() + 1 !== month || d.getFullYear() !== year) {
-          return false;
-        }
-        
-        // Loại bỏ ngày quá khứ và ngày hôm nay
-        const dateStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-        return dateStart.getTime() > todayStart.getTime();
+        // Chỉ gửi các ngày thuộc tháng đang xem
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
       });
 
       // Format dates đúng cách để tránh lệch timezone

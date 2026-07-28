@@ -7,6 +7,7 @@ import { getDailyRegistrations, exportDailyExcel } from '../controllers/dailyReg
 import { changePassword } from '../controllers/passwordController';
 import { getConfig, updateConfig } from '../controllers/configController';
 import { authenticate, isAdmin } from '../middleware/auth';
+import { applyBackupHook } from '../middleware/backupHook';
 
 const router = Router();
 
@@ -39,11 +40,11 @@ router.post('/registrations', authenticate, createRegistration);
 router.get('/registrations/my', authenticate, getMyRegistrations);
 router.post('/registrations/cancel', authenticate, cancelRegistration);
 
-// Admin: Bulk registration management
+// Admin: Bulk registration management (with pre-operation backup)
 router.get('/registrations/by-date', authenticate, isAdmin, getRegistrationsByDate);
-router.post('/registrations/bulk-create', authenticate, isAdmin, createBulkRegistration);
-router.post('/registrations/bulk-cancel', authenticate, isAdmin, cancelBulkRegistration);
-router.post('/registrations/bulk-edit-by-users', authenticate, isAdmin, bulkEditByUsers);
+router.post('/registrations/bulk-create', authenticate, isAdmin, applyBackupHook('BULK_CREATE'), createBulkRegistration);
+router.post('/registrations/bulk-cancel', authenticate, isAdmin, applyBackupHook('BULK_DELETE', true), cancelBulkRegistration);
+router.post('/registrations/bulk-edit-by-users', authenticate, isAdmin, applyBackupHook('BULK_UPDATE', true), bulkEditByUsers);
 
 // Statistics routes (Admin only)
 router.get('/statistics', authenticate, isAdmin, getStatistics);

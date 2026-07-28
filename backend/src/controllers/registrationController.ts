@@ -148,7 +148,8 @@ export const createRegistration = async (req: Request, res: Response) => {
       }
     }
 
-    // Nếu không có ngày nào được chọn, xóa tất cả đăng ký của tháng
+    // Nếu không có ngày nào được chọn, chỉ xóa các ngày TƯƠNG LAI của tháng
+    // KHÔNG xóa ngày quá khứ và ngày hôm nay
     if (dates.length === 0) {
       // Sử dụng month/year từ request, hoặc tính toán nếu không có
       let targetMonth = month;
@@ -169,10 +170,15 @@ export const createRegistration = async (req: Request, res: Response) => {
         }
       }
 
+      // CHỈ xóa các ngày tương lai (sau hôm nay)
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+      
       const result = await pool.query(
         `DELETE FROM registrations 
-         WHERE user_id = $1 AND month = $2 AND year = $3`,
-        [userId, targetMonth, targetYear]
+         WHERE user_id = $1 AND month = $2 AND year = $3 
+         AND registration_date > $4`,
+        [userId, targetMonth, targetYear, todayStart]
       );
 
       // Deleted registrations for the month
@@ -220,22 +226,23 @@ export const createRegistration = async (req: Request, res: Response) => {
       // Tìm ngày cần thêm và ngày cần xóa (CHỈ trong tháng đang xem)
       const newDates = datesInCurrentMonth.filter(d => !existingRegs.includes(d));
       
-      // CHỈ xóa các ngày TƯƠNG LAI mà user bỏ chọn (không xóa ngày quá khứ)
+      // CHỈ xóa các ngày TƯƠNG LAI mà user bỏ chọn (không xóa ngày quá khứ và hôm nay)
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
       
       const datesToDelete = existingRegs.filter(d => {
-        // Nếu ngày không có trong danh sách mới
+        // Nếu ngày vẫn có trong danh sách mới, không xóa
         if (datesInCurrentMonth.includes(d)) {
-          return false; // Không xóa
+          return false;
         }
         
-        // Parse date để kiểm tra xem có phải ngày quá khứ không
+        // Parse date để kiểm tra xem có phải ngày quá khứ hoặc hôm nay không
         const [y, m, day] = d.split('-').map(Number);
         const dateObj = new Date(y, m - 1, day);
         const dateStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0, 0);
         
-        // CHỈ xóa nếu là ngày tương lai (sau hôm nay)
+        // CHỈ xóa nếu là ngày tương lai (SAU hôm nay, >= ngày mai)
+        // Không xóa ngày hôm nay và ngày quá khứ
         return dateStart.getTime() > todayStart.getTime();
       });
 
@@ -410,6 +417,13 @@ export const createBulkRegistration = async (req: Request, res: Response) => {
 
     // Parse date để lấy month và year
     const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
+    
+    // Không cho phép tạo đăng ký cho ngày cuối tuần
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return res.status(400).json({ message: 'Không thể đăng ký cho ngày cuối tuần (Thứ 7 và Chủ Nhật)' });
+    }
+    
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
 
@@ -554,6 +568,13 @@ export const bulkEditByUsers = async (req: Request, res: Response) => {
           for (const dateStr of dates) {
             // Parse date để lấy month và year
             const dateObj = new Date(dateStr);
+            const dayOfWeek = dateObj.getDay();
+            
+            // Bỏ qua ngày cuối tuần
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+              continue;
+            }
+            
             const regMonth = dateObj.getMonth() + 1;
             const regYear = dateObj.getFullYear();
             

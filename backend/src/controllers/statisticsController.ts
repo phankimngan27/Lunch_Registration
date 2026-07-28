@@ -232,7 +232,7 @@ export const exportExcel = async (req: Request, res: Response) => {
       };
     });
     
-    // Thêm các cột ngày trong tháng
+    // Thêm các cột ngày trong tháng (TẤT CẢ CÁC NGÀY)
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(yearNum, monthNum - 1, day);
       const dayOfWeek = date.getDay();
@@ -247,7 +247,7 @@ export const exportExcel = async (req: Request, res: Response) => {
         right: { style: 'thin' }
       };
       
-      // Highlight thứ 7 và CN
+      // Highlight thứ 7 và CN bằng màu xám
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         cell.fill = {
           type: 'pattern',
@@ -279,7 +279,7 @@ export const exportExcel = async (req: Request, res: Response) => {
         rowValues.push(userVegetarian.has(vegDay) ? 'x' : '');
       });
       
-      // Thêm các cột chấm công
+      // Thêm các cột chấm công (TẤT CẢ CÁC NGÀY)
       for (let day = 1; day <= daysInMonth; day++) {
         rowValues.push(userRegs.has(day) ? 'x' : '');
       }
@@ -316,6 +316,7 @@ export const exportExcel = async (req: Request, res: Response) => {
           const date = new Date(yearNum, monthNum - 1, dayIndex);
           const dayOfWeek = date.getDay();
           
+          // Luôn tô màu xám cho T7 và CN (dù có đăng ký hay không)
           if (dayOfWeek === 0 || dayOfWeek === 6) {
             cell.fill = {
               type: 'pattern',
@@ -323,7 +324,7 @@ export const exportExcel = async (req: Request, res: Response) => {
               fgColor: { argb: 'FFD3D3D3' }
             };
           }
-          // Highlight ngày chay trong phần chấm công
+          // Highlight ngày chay trong phần chấm công (chỉ cho ngày làm việc)
           else if (sortedVegetarianDays.includes(dayIndex) && userRegs.has(dayIndex)) {
             cell.fill = {
               type: 'pattern',

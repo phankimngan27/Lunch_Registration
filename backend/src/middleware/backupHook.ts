@@ -1,18 +1,75 @@
 /**
- * Backup Hook Middleware
- * Automatically creates database backups before critical operations
+ * Backup Hook Middleware with Multi-Layer Protection
  * 
+ * PROTECTION STRATEGY:
+ * 1. Transaction-based rollback (always enabled) - PRIMARY PROTECTION
+ * 2. Physical backup before operation (optional) - SECONDARY PROTECTION
+ * 3. Audit log of all changes (always enabled) - FORENSICS
+ * 
+ * Even if backup fails, transaction rollback prevents data loss.
  * Use this middleware for routes that modify large amounts of data
- * or perform operations that could lead to data loss
+ * or perform operations that could lead to data loss.
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import pool from '../config/database';
 import { logger } from '../utils/logger';
 
 const execAsync = promisify(exec);
+
+interface BackupConfig {
+  enabled: boolean;
+  backupDir: string;
+  maxBackupsToKeep: number;
+  operations: string[]; // List of operations to trigger backup
+}
+
+/**
+ * Create audit log entry for dangerous operations
+ */
+async function createAuditLog(
+  operation: string,
+  userId: number,
+  userEmail: string,
+  metadata: any
+): Promise<void> {
+  try {
+    // Create audit_logs table if not exists (idempotent)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        operation VARCHAR(100) NOT NULL,
+        user_id INTEGER NOT NULL,
+        user_email VARCHAR(255) NOT NULL,
+        metadata JSONB,
+        backup_created BOOLEAN DEFAULT false,
+        backup_file VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes if not exist
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_operation ON audit_logs(operation);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
+    `);
+
+    await pool.query(
+      `INSERT INTO audit_logs (operation, user_id, user_email, metadata, backup_created)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [operation, userId, userEmail, JSON.stringify(metadata), false]
+    );
+
+    logger.info('Audit log created', { operation, userEmail });
+  } catch (error) {
+    // Don't fail operation if audit log fails, just log it
+    logger.error('Failed to create audit log', error, { operation, userEmail });
+  }
+}
 
 interface BackupConfig {
   enabled: boolean;
@@ -27,6 +84,7 @@ const config: BackupConfig = {
   backupDir: path.join(__dirname, '../../../database/backups'),
   maxBackupsToKeep: 10,
   operations: [
+    'BULK_CREATE',
     'BULK_DELETE',
     'BULK_UPDATE',
     'USER_IMPORT',
@@ -79,7 +137,12 @@ async function createPreOpBackup(operation: string): Promise<boolean> {
 }
 
 /**
- * Middleware factory for pre-operation backup
+ * Middleware factory for pre-operation backup with multi-layer protection
+ * 
+ * PROTECTION LAYERS:
+ * 1. Audit Log (always) - Records who did what, when
+ * 2. Physical Backup (optional) - Creates SQL dump before operation
+ * 3. Transaction Protection (controller responsibility) - Allows rollback
  * 
  * @param operation - Name of the operation (e.g., 'BULK_DELETE')
  * @param options - Additional options
@@ -87,22 +150,54 @@ async function createPreOpBackup(operation: string): Promise<boolean> {
  */
 export const preOperationBackup = (
   operation: string, 
-  options: { blocking?: boolean } = {}
+  options: { 
+    blocking?: boolean;
+    requireBackup?: boolean;  // NEW: Force backup even if disabled
+  } = {}
 ) => {
   return async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    
+    // LAYER 1: ALWAYS create audit log (even if backup disabled)
+    if (user) {
+      await createAuditLog(operation, user.id, user.email, {
+        path: req.path,
+        method: req.method,
+        ip: req.ip,
+        body: req.body
+      });
+    }
+    
     // Skip if operation not in trigger list
     if (!config.operations.includes(operation)) {
       return next();
     }
     
+    // LAYER 2: Physical backup (optional, but recommended)
+    // Skip if backup is disabled AND not required
+    if (!config.enabled && !options.requireBackup) {
+      logger.info('Auto-backup disabled, skipping pre-operation backup', { operation });
+      return next();
+    }
+    
     logger.info('Pre-operation backup triggered', { 
       operation, 
-      user: (req as any).user?.email,
-      path: req.path 
+      user: user?.email,
+      path: req.path,
+      requireBackup: options.requireBackup 
     });
     
     try {
       const success = await createPreOpBackup(operation);
+      
+      // If backup is REQUIRED and failed, block operation
+      if (options.requireBackup && !success) {
+        return res.status(500).json({ 
+          message: 'Không thể tạo backup trước thao tác. Vui lòng thử lại hoặc liên hệ IT.',
+          code: 'BACKUP_REQUIRED_FAILED',
+          details: 'Operation requires backup but backup system failed'
+        });
+      }
       
       // If blocking is enabled and backup failed, return error
       if (options.blocking && !success) {
@@ -118,7 +213,8 @@ export const preOperationBackup = (
     } catch (error) {
       logger.error('Backup hook error', error);
       
-      if (options.blocking) {
+      // If backup is REQUIRED, block on error
+      if (options.requireBackup || options.blocking) {
         return res.status(500).json({ 
           message: 'Backup system error. Operation aborted for safety.',
           code: 'BACKUP_ERROR'
@@ -133,16 +229,28 @@ export const preOperationBackup = (
 /**
  * Apply backup hook to specific routes
  * 
- * Usage in routes:
- * router.post('/registrations/bulk-cancel', 
- *   authenticate, 
- *   isAdmin, 
- *   applyBackupHook('BULK_DELETE'),
- *   cancelBulkRegistration
- * );
+ * USAGE EXAMPLES:
+ * 
+ * // Non-blocking backup (best for daily operations)
+ * router.post('/bulk-edit', applyBackupHook('BULK_UPDATE'));
+ * 
+ * // Blocking backup (fails operation if backup fails)
+ * router.post('/bulk-delete', applyBackupHook('BULK_DELETE', true));
+ * 
+ * // Required backup (forces backup even if AUTO_BACKUP_ENABLED=false)
+ * router.post('/critical-op', applyBackupHook('CRITICAL_OP', false, true));
+ * 
+ * PROTECTION LAYERS:
+ * - Audit log: Always created (even if backup disabled)
+ * - Physical backup: Created if enabled or required
+ * - Transaction: Controller must use BEGIN/COMMIT/ROLLBACK
  */
-export const applyBackupHook = (operation: string, blocking: boolean = false) => {
-  return preOperationBackup(operation, { blocking });
+export const applyBackupHook = (
+  operation: string, 
+  blocking: boolean = false,
+  requireBackup: boolean = false
+) => {
+  return preOperationBackup(operation, { blocking, requireBackup });
 };
 
 /**

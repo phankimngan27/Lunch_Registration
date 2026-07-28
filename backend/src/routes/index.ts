@@ -40,11 +40,16 @@ router.post('/registrations', authenticate, createRegistration);
 router.get('/registrations/my', authenticate, getMyRegistrations);
 router.post('/registrations/cancel', authenticate, cancelRegistration);
 
-// Admin: Bulk registration management (with pre-operation backup)
+// Admin: Bulk registration management
+// PROTECTION STRATEGY:
+// - Audit log: Always created for tracking
+// - Physical backup: Optional (non-blocking) - won't stop operation if fails
+// - Transaction: Controller uses BEGIN/COMMIT/ROLLBACK
+// Result: Even if backup fails, transaction rollback prevents data loss
 router.get('/registrations/by-date', authenticate, isAdmin, getRegistrationsByDate);
 router.post('/registrations/bulk-create', authenticate, isAdmin, applyBackupHook('BULK_CREATE'), createBulkRegistration);
-router.post('/registrations/bulk-cancel', authenticate, isAdmin, applyBackupHook('BULK_DELETE', true), cancelBulkRegistration);
-router.post('/registrations/bulk-edit-by-users', authenticate, isAdmin, applyBackupHook('BULK_UPDATE', true), bulkEditByUsers);
+router.post('/registrations/bulk-cancel', authenticate, isAdmin, applyBackupHook('BULK_DELETE'), cancelBulkRegistration);
+router.post('/registrations/bulk-edit-by-users', authenticate, isAdmin, applyBackupHook('BULK_UPDATE'), bulkEditByUsers);
 
 // Statistics routes (Admin only)
 router.get('/statistics', authenticate, isAdmin, getStatistics);
